@@ -1,0 +1,17 @@
+[project]
+name = "python-homey-mcp"
+version = "0.1.0"
+description = "HomeyPro MCP Server - A Model Context Protocol server for HomeyPro home automation systems"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "fastmcp>=2.10.2",
+    "python-homey",
+]
+
+[project.scripts]
+homey-mcp = "main:main"
+homey-mcp-server = "run_server:run_server"
+
+[tool.uv.sources]
+python-homey = { path = "../python-homey", editable = true }
