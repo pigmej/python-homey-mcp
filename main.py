@@ -12,6 +12,8 @@ import logging
 import os
 from operator import attrgetter
 from typing import Any, Dict, List, Optional, Union
+from pydantic.fields import Field
+from typing_extensions import Annotated, Literal
 from urllib.parse import urlparse
 
 import homey
@@ -131,7 +133,13 @@ async def ensure_client() -> homey.HomeyClient:
 
 @mcp.tool()
 async def list_devices(
-    cursor: Optional[str] = None, compact: Optional[bool] = True
+    cursor: Optional[str] = None,
+    compact: Annotated[
+        bool,
+        Field(
+            description="Optional switch for compact results, by default true. Switch only if really needed"
+        ),
+    ] = True,
 ) -> Dict[str, Any]:
     """
     List all devices with pagination support.
@@ -186,7 +194,15 @@ async def list_devices(
 
 
 @mcp.tool()
-async def get_device(device_id: str, compact: Optional[bool] = True) -> Dict[str, Any]:
+async def get_device(
+    device_id: str,
+    compact: Annotated[
+        bool,
+        Field(
+            description="Optional switch for compact results, by default true. Switch only if really needed"
+        ),
+    ] = True,
+) -> Dict[str, Any]:
     """
     Get detailed information about a specific device.
 
@@ -266,7 +282,14 @@ async def get_devices_capabilities() -> Dict[str, Any]:
 
 @mcp.tool()
 async def search_devices_by_name(
-    query: str, cursor: Optional[str] = None, compact: Optional[bool] = True
+    query: str,
+    cursor: Optional[str] = None,
+    compact: Annotated[
+        bool,
+        Field(
+            description="Optional switch for compact results, by default true. Switch only if really needed"
+        ),
+    ] = True,
 ) -> Dict[str, Any]:
     """
     Search devices by name with pagination support.
@@ -326,7 +349,14 @@ async def search_devices_by_name(
 
 @mcp.tool()
 async def search_devices_by_class(
-    query: str, cursor: Optional[str] = None, compact: Optional[bool] = True
+    query: str,
+    cursor: Optional[str] = None,
+    compact: Annotated[
+        bool,
+        Field(
+            description="Optional switch for compact results, by default true. Switch only if really needed"
+        ),
+    ] = True,
 ) -> Dict[str, Any]:
     """
     Search devices by class with pagination support.
@@ -486,7 +516,14 @@ async def list_zones(cursor: Optional[str] = None) -> Dict[str, Any]:
 
 @mcp.tool()
 async def get_zone_devices(
-    zone_id: str, cursor: Optional[str] = None, compact: Optional[bool] = True
+    zone_id: str,
+    cursor: Optional[str] = None,
+    compact: Annotated[
+        bool,
+        Field(
+            description="Optional switch for compact results, by default true. Switch only if really needed"
+        ),
+    ] = True,
 ) -> Dict[str, Any]:
     """
     Get all devices in a specific zone with pagination support.
@@ -624,7 +661,26 @@ async def trigger_flow(flow_id: str) -> Dict[str, Any]:
 
 @mcp.tool()
 async def get_device_insights(
-    device_id: str, cursor: Optional[str] = None
+    device_id: str,
+    capability: str,
+    resolution: Annotated[
+        Literal[
+            "lastHour",
+            "last6Hours",
+            "last12Hours",
+            "last24Hours",
+            "last7Days",
+            "last14Days",
+            "last31Days",
+        ],
+        Field(description="Resolution for insights"),
+    ],
+    from_timestamp: Annotated[
+        int | None, Field(description="Timestamp to start insights from")
+    ] = None,
+    to_timestamp: Annotated[
+        int | None, Field(description="Timestamp to end insights on")
+    ] = None,
 ) -> Dict[str, Any]:
     """
     Get insights data for a specific device with pagination support.
@@ -637,25 +693,16 @@ async def get_device_insights(
         Paginated insights data for the device.
     """
     try:
-        cursor_params = parse_cursor(cursor)
         client = await ensure_client()
 
         # Get device insights
-        insights = await client.devices.get_device_insights(device_id)
-
-        # Apply pagination
-        result = paginate_results(insights, cursor_params)
+        insights = await client.devices.get_device_insights(
+            device_id, capability, resolution, from_timestamp, to_timestamp
+        )
 
         return {
-            "insights": result["items"],
+            "insights": insights,
             "device_id": device_id,
-            "pagination": {
-                "total_count": result["total_count"],
-                "page_size": result["page_size"],
-                "offset": result["offset"],
-                "has_next": result["has_next"],
-                "next_cursor": result["next_cursor"],
-            },
         }
 
     except PaginationError as e:
