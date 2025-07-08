@@ -39,7 +39,7 @@ class PaginationError(Exception):
 
 def parse_cursor(cursor: Optional[str]) -> Dict[str, Any]:
     """Parse cursor string into pagination parameters."""
-    if not cursor:
+    if not cursor or cursor == "null":
         return {"offset": 0, "page_size": DEFAULT_PAGE_SIZE}
 
     try:
