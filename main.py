@@ -666,6 +666,27 @@ async def get_device_insights(
 
 
 @mcp.tool()
+async def get_zone_temp(zone_id: str) -> Dict[str, Any]:
+    """
+    Get zone temperature by averaging applicable devices measure_temperature in the zone
+
+    Args:
+        zone_id: Zone id
+
+    Returns:
+        Temperature in the zone
+
+    """
+    try:
+        client = await ensure_client()
+        temp = await client.zones.get_zone_temperature(zone_id)
+        return {"temperature": temp}
+    except Exception as e:
+        logger.error(f"Error getting zone temperature: {e}")
+        return {"error": f"Failed getting zone temperature: {e}"}
+
+
+@mcp.tool()
 async def get_system_info() -> Dict[str, Any]:
     """
     Get basic system information about the Homey instance.
