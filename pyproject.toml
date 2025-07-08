@@ -9,9 +9,5 @@ dependencies = [
     "python-homey",
 ]
 
-[project.scripts]
-homey-mcp = "main:main"
-homey-mcp-server = "run_server:run_server"
-
 [tool.uv.sources]
-python-homey = { path = "../python-homey", editable = true }
+python-homey = { git = "https://github.com/pigmej/python-homey.git"}
