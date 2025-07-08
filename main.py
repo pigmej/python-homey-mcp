@@ -10,7 +10,8 @@ import asyncio
 import json
 import logging
 import os
-from typing import Any, Dict, List, Optional, Union, Sequence
+from operator import attrgetter
+from typing import Any, Dict, List, Optional, Union
 from urllib.parse import urlparse
 
 import homey
@@ -129,12 +130,15 @@ async def ensure_client() -> homey.HomeyClient:
 
 
 @mcp.tool()
-async def list_devices(cursor: Optional[str] = None) -> Dict[str, Any]:
+async def list_devices(
+    cursor: Optional[str] = None, compact: Optional[bool] = True
+) -> Dict[str, Any]:
     """
     List all devices with pagination support.
 
     Args:
         cursor: Optional cursor for pagination. If not provided, starts from the beginning.
+        compact: Optional switch for compact results, by default true. Switch only if really needed
 
     Returns:
         Paginated list of devices with metadata.
@@ -142,6 +146,10 @@ async def list_devices(cursor: Optional[str] = None) -> Dict[str, Any]:
     try:
         cursor_params = parse_cursor(cursor)
         client = await ensure_client()
+        if compact:
+            dumper = attrgetter("model_dump_compact")
+        else:
+            dumper = attrgetter("model_dump")
 
         # Get all devices
         devices = await client.devices.get_devices()
@@ -149,7 +157,7 @@ async def list_devices(cursor: Optional[str] = None) -> Dict[str, Any]:
         # Convert to dictionaries for serialization
         device_dicts = []
         for device in devices:
-            device_dict = device.model_dump()
+            device_dict = dumper(device)()
             # Add computed fields
             device_dict["is_online"] = device.is_online()
             device_dict["driver_id"] = device.get_driver_id()
@@ -178,12 +186,13 @@ async def list_devices(cursor: Optional[str] = None) -> Dict[str, Any]:
 
 
 @mcp.tool()
-async def get_device(device_id: str) -> Dict[str, Any]:
+async def get_device(device_id: str, compact: Optional[bool] = True) -> Dict[str, Any]:
     """
     Get detailed information about a specific device.
 
     Args:
         device_id: The unique identifier of the device.
+        compact: Optional switch for compact results, by default true. Switch only if really needed
 
     Returns:
         Device details including capabilities, settings, and insights.
@@ -196,8 +205,14 @@ async def get_device(device_id: str) -> Dict[str, Any]:
         capabilities = await client.devices.get_device_capabilities(device_id)
         settings = await client.devices.get_device_settings(device_id)
 
+        # Set up dumper based on compact flag
+        if compact:
+            dumper = attrgetter("model_dump_compact")
+        else:
+            dumper = attrgetter("model_dump")
+
         # Convert to dictionary
-        device_dict = device.model_dump()
+        device_dict = dumper(device)()
         device_dict["is_online"] = device.is_online()
         device_dict["driver_id"] = device.get_driver_id()
         device_dict["zone_id"] = device.get_zone_id()
@@ -214,13 +229,52 @@ async def get_device(device_id: str) -> Dict[str, Any]:
 
 
 @mcp.tool()
-async def search_devices(query: str, cursor: Optional[str] = None) -> Dict[str, Any]:
+async def get_devices_classes() -> Dict[str, Any]:
+    """
+    List all possible device clasess, usefull for getting know what to look for
+    Usually better to query it before searching by name first
+
+    Returns:
+        All available device classes
+    """
+    try:
+        client = await ensure_client()
+        classes = await client.devices.get_device_classes()
+        return {"classes": classes}
+    except Exception as e:
+        logger.error(f"Error listing devices clases: {e}")
+        return {"error": f"Failed to get devices classes: {e}"}
+
+
+@mcp.tool()
+async def get_devices_capabilities() -> Dict[str, Any]:
+    """
+    List all possible device capabilities, usefull for getting know what to look for.
+    Usually better to query it before searching by name first
+
+    Returns:
+        All available device capabilities
+    """
+    try:
+        client = await ensure_client()
+        classes = await client.devices.get_devices_capabilities()
+        return {"capabilities": classes}
+    except Exception as e:
+        logger.error(f"Error listing devices capabilities: {e}")
+        return {"error": f"Failed to get devices capabilities: {e}"}
+
+
+@mcp.tool()
+async def search_devices_by_name(
+    query: str, cursor: Optional[str] = None, compact: Optional[bool] = True
+) -> Dict[str, Any]:
     """
     Search devices by name with pagination support.
 
     Args:
         query: Search query to match against device names.
         cursor: Optional cursor for pagination.
+        compact: Optional switch for compact results, by default true. Switch only if really needed
 
     Returns:
         Paginated list of matching devices.
@@ -230,12 +284,79 @@ async def search_devices(query: str, cursor: Optional[str] = None) -> Dict[str, 
         client = await ensure_client()
 
         # Search devices
-        devices = await client.devices.search_devices(query)
+        devices = await client.devices.search_devices_by_name(query)
 
         # Convert to dictionaries
+        # Set up dumper based on compact flag
+        if compact:
+            dumper = attrgetter("model_dump_compact")
+        else:
+            dumper = attrgetter("model_dump")
+
+        # Convert to dictionaries for serialization
         device_dicts = []
         for device in devices:
-            device_dict = device.model_dump()
+            device_dict = dumper(device)()
+            device_dict["is_online"] = device.is_online()
+            device_dict["driver_id"] = device.get_driver_id()
+            device_dict["zone_id"] = device.get_zone_id()
+            device_dicts.append(device_dict)
+
+        # Apply pagination
+        result = paginate_results(device_dicts, cursor_params)
+
+        return {
+            "devices": result["items"],
+            "query": query,
+            "pagination": {
+                "total_count": result["total_count"],
+                "page_size": result["page_size"],
+                "offset": result["offset"],
+                "has_next": result["has_next"],
+                "next_cursor": result["next_cursor"],
+            },
+        }
+
+    except PaginationError as e:
+        return {"error": str(e)}
+    except Exception as e:
+        logger.error(f"Error searching devices: {e}")
+        return {"error": f"Failed to search devices: {e}"}
+
+
+@mcp.tool()
+async def search_devices_by_class(
+    query: str, cursor: Optional[str] = None, compact: Optional[bool] = True
+) -> Dict[str, Any]:
+    """
+    Search devices by class with pagination support.
+
+    Args:
+        query: Search query to match against device class.
+        cursor: Optional cursor for pagination.
+        compact: Optional switch for compact results, by default true. Switch only if really needed
+
+    Returns:
+        Paginated list of matching devices.
+    """
+    try:
+        cursor_params = parse_cursor(cursor)
+        client = await ensure_client()
+
+        # Search devices
+        devices = await client.devices.search_devices_by_class(query)
+
+        # Convert to dictionaries
+        # Set up dumper based on compact flag
+        if compact:
+            dumper = attrgetter("model_dump_compact")
+        else:
+            dumper = attrgetter("model_dump")
+
+        # Convert to dictionaries for serialization
+        device_dicts = []
+        for device in devices:
+            device_dict = dumper(device)()
             device_dict["is_online"] = device.is_online()
             device_dict["driver_id"] = device.get_driver_id()
             device_dict["zone_id"] = device.get_zone_id()
@@ -365,7 +486,7 @@ async def list_zones(cursor: Optional[str] = None) -> Dict[str, Any]:
 
 @mcp.tool()
 async def get_zone_devices(
-    zone_id: str, cursor: Optional[str] = None
+    zone_id: str, cursor: Optional[str] = None, compact: Optional[bool] = True
 ) -> Dict[str, Any]:
     """
     Get all devices in a specific zone with pagination support.
@@ -373,6 +494,7 @@ async def get_zone_devices(
     Args:
         zone_id: The unique identifier of the zone.
         cursor: Optional cursor for pagination.
+        compact: Optional switch for compact results, by default true. Switch only if really needed
 
     Returns:
         Paginated list of devices in the zone.
@@ -385,12 +507,17 @@ async def get_zone_devices(
         devices = await client.devices.get_devices_by_zone(zone_id)
 
         # Convert to dictionaries
+        # Set up dumper based on compact flag
+        if compact:
+            dumper = attrgetter("model_dump_compact")
+        else:
+            dumper = attrgetter("model_dump")
+
+        # Convert to dictionaries for serialization
         device_dicts = []
         for device in devices:
-            device_dict = device.model_dump()
+            device_dict = dumper(device)()
             device_dict["is_online"] = device.is_online()
-            device_dict["driver_id"] = device.get_driver_id()
-            device_dict["zone_id"] = device.get_zone_id()
             device_dicts.append(device_dict)
 
         # Apply pagination
