@@ -1335,10 +1335,11 @@ async def get_zone_temp(zone_id: str) -> Dict[str, Any]:
 @mcp.tool()
 async def get_system_info() -> Dict[str, Any]:
     """
-    Get basic system information about the Homey instance.
+    Get basic system information about the Homey instance. Includes location, address, language, units, connection status, and counts of devices, zones, and flows.
+    Usefull to use before other methods/tools.
 
     Returns:
-        System information and connection status.
+        System information
     """
     try:
         client = await ensure_client()
@@ -1361,6 +1362,9 @@ async def get_system_info() -> Dict[str, Any]:
         enabled_advanced_flows = await client.flows.get_enabled_advanced_flows()
         disabled_advanced_flows = await client.flows.get_disabled_advanced_flows()
 
+        client = await ensure_client()
+        config = await client.system.get_system_config()
+
         return {
             "connection_status": "connected",
             "total_devices": len(devices),
@@ -1372,6 +1376,12 @@ async def get_system_info() -> Dict[str, Any]:
             "disabled_flows": len(disabled_flows),
             "enabled_advanced_flows": len(enabled_advanced_flows),
             "disabled_advanced_flows": len(disabled_advanced_flows),
+            "address": config.address,
+            "language": config.language,
+            "units": config.units,
+            "units_metric": config.is_metric(),
+            "units_imperial": config.is_imperial(),
+            "location": config.get_location_coordinates(),
         }
 
     except Exception as e:
@@ -1395,7 +1405,7 @@ async def main():
         await ensure_client()
 
         # Run the server
-        mcp.run()
+        await mcp.run()
 
     except KeyboardInterrupt:
         logger.info("Server shutdown requested")

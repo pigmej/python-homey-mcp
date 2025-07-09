@@ -7,6 +7,7 @@ A Model Context Protocol (MCP) server for interacting with HomeyPro home automat
 - **Device Management**: List, search, and control devices with full capability support
 - **Zone Management**: Browse zones and their associated devices
 - **Flow Management**: List and trigger automation flows
+- **System Management**: Get and update system configuration (location, address, language, units)
 - **Pagination Support**: Efficient handling of large datasets with cursor-based pagination
 - **Real-time Data**: Get current device states, capabilities, and insights
 - **Error Handling**: Comprehensive error handling with detailed error messages
