@@ -14,6 +14,7 @@ from ..mcp_instance import mcp
 logger = get_logger(__name__)
 
 
+# resource would be better but Gemini does not support it
 @mcp.tool()
 async def list_devices(
     cursor: Optional[str] = None,
@@ -48,11 +49,12 @@ async def list_devices(
         # Convert to dictionaries for serialization
         device_dicts = []
         for device in devices:
+            if device.hidden:
+                # omit hidden devices
+                continue
             device_dict = dumper(device)()
             # Add computed fields
             device_dict["is_online"] = device.is_online()
-            device_dict["driver_id"] = device.get_driver_id()
-            device_dict["zone_id"] = device.get_zone_id()
             device_dicts.append(device_dict)
 
         # Apply pagination
@@ -76,6 +78,7 @@ async def list_devices(
         return {"error": f"Failed to list devices: {e}"}
 
 
+# resource would be better but Gemini does not support it
 @mcp.tool()
 async def get_device(
     device_id: str,
@@ -113,8 +116,6 @@ async def get_device(
         # Convert to dictionary
         device_dict = dumper(device)()
         device_dict["is_online"] = device.is_online()
-        device_dict["driver_id"] = device.get_driver_id()
-        device_dict["zone_id"] = device.get_zone_id()
         device_dict["capabilities_detailed"] = {
             cap_id: cap.model_dump() for cap_id, cap in capabilities.items()
         }
@@ -175,7 +176,7 @@ async def search_devices_by_name(
     ] = True,
 ) -> Dict[str, Any]:
     """
-    Search devices by name with pagination support.
+    Search devices by name with pagination support. Using note field from the result could be helpful too.
 
     Args:
         query: Search query to match against device names.
@@ -202,10 +203,11 @@ async def search_devices_by_name(
         # Convert to dictionaries for serialization
         device_dicts = []
         for device in devices:
+            if device.hidden:
+                # omit hidden devices
+                continue
             device_dict = dumper(device)()
             device_dict["is_online"] = device.is_online()
-            device_dict["driver_id"] = device.get_driver_id()
-            device_dict["zone_id"] = device.get_zone_id()
             device_dicts.append(device_dict)
 
         # Apply pagination
@@ -269,10 +271,11 @@ async def search_devices_by_class(
         # Convert to dictionaries for serialization
         device_dicts = []
         for device in devices:
+            if device.hidden:
+                # omit hidden devices
+                continue
             device_dict = dumper(device)()
             device_dict["is_online"] = device.is_online()
-            device_dict["driver_id"] = device.get_driver_id()
-            device_dict["zone_id"] = device.get_zone_id()
             device_dicts.append(device_dict)
 
         # Apply pagination
