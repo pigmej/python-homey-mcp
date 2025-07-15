@@ -422,37 +422,13 @@ wheels = [
 [[package]]
 name = "python-homey"
 version = "0.1.0"
-source = { editable = "../python-homey" }
+source = { git = "https://github.com/pigmej/python-homey.git#386aad4f103f95fa3ab11a4cb76c840e9dbcc0a0" }
 dependencies = [
     { name = "dotenv" },
     { name = "httpx" },
     { name = "pydantic" },
     { name = "typing-extensions" },
     { name = "websockets" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "dotenv", specifier = ">=0.9.9" },
-    { name = "dotenv", marker = "extra == 'dev'", specifier = ">=0.9.9" },
-    { name = "httpx", specifier = ">=0.24.0" },
-    { name = "isort", marker = "extra == 'dev'", specifier = ">=5.0.0" },
-    { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.0.0" },
-    { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=3.0.0" },
-    { name = "pydantic", specifier = ">=2.0.0" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.0.0" },
-    { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.21.0" },
-    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.12.2" },
-    { name = "typing-extensions", specifier = ">=4.0.0" },
-    { name = "websockets", specifier = ">=11.0.0" },
-]
-provides-extras = ["dev"]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "mypy", specifier = ">=1.14.1" },
-    { name = "pytest", specifier = ">=8.3.5" },
-    { name = "pytest-asyncio", specifier = ">=0.24.0" },
 ]
 
 [[package]]
@@ -467,7 +443,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "fastmcp", specifier = ">=2.10.2" },
-    { name = "python-homey", editable = "../python-homey" },
+    { name = "python-homey", git = "https://github.com/pigmej/python-homey.git" },
 ]
 
 [[package]]
