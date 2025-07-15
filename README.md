@@ -14,6 +14,8 @@ A Model Context Protocol (MCP) server for interacting with HomeyPro home automat
 
 ## Installation
 
+### Local Development
+
 1. Clone the repository and navigate to the project directory:
 ```bash
 cd python-homey-mcp
@@ -23,6 +25,16 @@ cd python-homey-mcp
 ```bash
 uv sync
 ```
+
+### Docker
+
+Pull the pre-built Docker image:
+
+```bash
+docker pull ghcr.io/pigmej/python-homey-mcp:latest
+```
+
+No additional installation steps are required when using Docker.
 
 ## Configuration
 
@@ -55,8 +67,35 @@ You can find your HomeyPro's IP address in:
 
 ### Running the Server
 
+#### Local Development
+
 ```bash
 uv run fastmcp run -t http --host 0.0.0.0 -p 4445 -l DEBUG main.py
+```
+
+#### Docker Container
+
+Run the MCP server in a Docker container:
+
+```bash
+docker run -p 4445:4445 \
+  -e HOMEY_API_URL="http://YOUR_HOMEY_IP_ADDRESS" \
+  -e HOMEY_API_TOKEN="YOUR_PERSONAL_ACCESS_TOKEN" \
+  ghcr.io/pigmej/python-homey-mcp:latest
+```
+
+Or using docker-compose:
+
+```yaml
+version: '3.8'
+services:
+  python-homey-mcp:
+    image: ghcr.io/pigmej/python-homey-mcp:latest
+    ports:
+      - "4445:4445"
+    environment:
+      - HOMEY_API_URL=http://YOUR_HOMEY_IP_ADDRESS
+      - HOMEY_API_TOKEN=YOUR_PERSONAL_ACCESS_TOKEN
 ```
 
 The server will start and connect to your HomeyPro instance. You'll see a connection confirmation message. But basically please yield to [FastMCP docs](https://gofastmcp.com/patterns/cli)
