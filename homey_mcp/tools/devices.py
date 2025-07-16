@@ -72,10 +72,36 @@ async def list_devices(
         }
 
     except PaginationError as e:
-        return {"error": str(e)}
+        logger.error(f"Pagination error in list_devices: {e}")
+        return {
+            "error": f"Pagination error: {str(e)}",
+            "error_type": "pagination",
+            "suggested_action": "Check cursor parameter format"
+        }
+    except ConnectionError as e:
+        logger.error(f"Connection error in list_devices: {e}")
+        return {
+            "error": "Failed to list devices due to connection issues",
+            "error_type": "connection",
+            "suggested_action": "Check HomeyPro connectivity and network settings",
+            "details": str(e)
+        }
+    except TimeoutError as e:
+        logger.error(f"Timeout error in list_devices: {e}")
+        return {
+            "error": "Failed to list devices due to timeout",
+            "error_type": "timeout",
+            "suggested_action": "HomeyPro may be overloaded, try again in a few moments",
+            "details": str(e)
+        }
     except Exception as e:
-        logger.error(f"Error listing devices: {e}")
-        return {"error": f"Failed to list devices: {e}"}
+        logger.error(f"Unexpected error in list_devices: {type(e).__name__}: {e}")
+        return {
+            "error": "Failed to list devices due to unexpected error",
+            "error_type": "unknown",
+            "suggested_action": "Check system logs and HomeyPro status",
+            "details": f"{type(e).__name__}: {str(e)}"
+        }
 
 
 # resource would be better but Gemini does not support it
@@ -123,9 +149,33 @@ async def get_device(
 
         return {"device": device_dict}
 
+    except ConnectionError as e:
+        logger.error(f"Connection error in get_device {device_id}: {e}")
+        return {
+            "error": "Failed to get device due to connection issues",
+            "error_type": "connection",
+            "suggested_action": "Check HomeyPro connectivity and network settings",
+            "device_id": device_id,
+            "details": str(e)
+        }
+    except TimeoutError as e:
+        logger.error(f"Timeout error in get_device {device_id}: {e}")
+        return {
+            "error": "Failed to get device due to timeout",
+            "error_type": "timeout",
+            "suggested_action": "HomeyPro may be overloaded, try again in a few moments",
+            "device_id": device_id,
+            "details": str(e)
+        }
     except Exception as e:
-        logger.error(f"Error getting device {device_id}: {e}")
-        return {"error": f"Failed to get device: {e}"}
+        logger.error(f"Unexpected error in get_device {device_id}: {type(e).__name__}: {e}")
+        return {
+            "error": "Failed to get device due to unexpected error",
+            "error_type": "unknown",
+            "suggested_action": "Check system logs and HomeyPro status",
+            "device_id": device_id,
+            "details": f"{type(e).__name__}: {str(e)}"
+        }
 
 
 @mcp.tool()
@@ -141,9 +191,30 @@ async def get_devices_classes() -> Dict[str, Any]:
         client = await ensure_client()
         classes = await client.devices.get_device_classes()
         return {"classes": classes}
+    except ConnectionError as e:
+        logger.error(f"Connection error in get_devices_classes: {e}")
+        return {
+            "error": "Failed to get device classes due to connection issues",
+            "error_type": "connection",
+            "suggested_action": "Check HomeyPro connectivity and network settings",
+            "details": str(e)
+        }
+    except TimeoutError as e:
+        logger.error(f"Timeout error in get_devices_classes: {e}")
+        return {
+            "error": "Failed to get device classes due to timeout",
+            "error_type": "timeout",
+            "suggested_action": "HomeyPro may be overloaded, try again in a few moments",
+            "details": str(e)
+        }
     except Exception as e:
-        logger.error(f"Error listing devices clases: {e}")
-        return {"error": f"Failed to get devices classes: {e}"}
+        logger.error(f"Unexpected error in get_devices_classes: {type(e).__name__}: {e}")
+        return {
+            "error": "Failed to get device classes due to unexpected error",
+            "error_type": "unknown",
+            "suggested_action": "Check system logs and HomeyPro status",
+            "details": f"{type(e).__name__}: {str(e)}"
+        }
 
 
 @mcp.tool()
@@ -159,9 +230,30 @@ async def get_devices_capabilities() -> Dict[str, Any]:
         client = await ensure_client()
         classes = await client.devices.get_devices_capabilities()
         return {"capabilities": classes}
+    except ConnectionError as e:
+        logger.error(f"Connection error in get_devices_capabilities: {e}")
+        return {
+            "error": "Failed to get device capabilities due to connection issues",
+            "error_type": "connection",
+            "suggested_action": "Check HomeyPro connectivity and network settings",
+            "details": str(e)
+        }
+    except TimeoutError as e:
+        logger.error(f"Timeout error in get_devices_capabilities: {e}")
+        return {
+            "error": "Failed to get device capabilities due to timeout",
+            "error_type": "timeout",
+            "suggested_action": "HomeyPro may be overloaded, try again in a few moments",
+            "details": str(e)
+        }
     except Exception as e:
-        logger.error(f"Error listing devices capabilities: {e}")
-        return {"error": f"Failed to get devices capabilities: {e}"}
+        logger.error(f"Unexpected error in get_devices_capabilities: {type(e).__name__}: {e}")
+        return {
+            "error": "Failed to get device capabilities due to unexpected error",
+            "error_type": "unknown",
+            "suggested_action": "Check system logs and HomeyPro status",
+            "details": f"{type(e).__name__}: {str(e)}"
+        }
 
 
 @mcp.tool()
@@ -226,10 +318,40 @@ async def search_devices_by_name(
         }
 
     except PaginationError as e:
-        return {"error": str(e)}
+        logger.error(f"Pagination error in search_devices_by_name: {e}")
+        return {
+            "error": f"Pagination error: {str(e)}",
+            "error_type": "pagination",
+            "suggested_action": "Check cursor parameter format",
+            "query": query
+        }
+    except ConnectionError as e:
+        logger.error(f"Connection error in search_devices_by_name: {e}")
+        return {
+            "error": "Failed to search devices due to connection issues",
+            "error_type": "connection",
+            "suggested_action": "Check HomeyPro connectivity and network settings",
+            "query": query,
+            "details": str(e)
+        }
+    except TimeoutError as e:
+        logger.error(f"Timeout error in search_devices_by_name: {e}")
+        return {
+            "error": "Failed to search devices due to timeout",
+            "error_type": "timeout",
+            "suggested_action": "HomeyPro may be overloaded, try again in a few moments",
+            "query": query,
+            "details": str(e)
+        }
     except Exception as e:
-        logger.error(f"Error searching devices: {e}")
-        return {"error": f"Failed to search devices: {e}"}
+        logger.error(f"Unexpected error in search_devices_by_name: {type(e).__name__}: {e}")
+        return {
+            "error": "Failed to search devices due to unexpected error",
+            "error_type": "unknown",
+            "suggested_action": "Check system logs and HomeyPro status",
+            "query": query,
+            "details": f"{type(e).__name__}: {str(e)}"
+        }
 
 
 @mcp.tool()
@@ -294,10 +416,40 @@ async def search_devices_by_class(
         }
 
     except PaginationError as e:
-        return {"error": str(e)}
+        logger.error(f"Pagination error in search_devices_by_class: {e}")
+        return {
+            "error": f"Pagination error: {str(e)}",
+            "error_type": "pagination",
+            "suggested_action": "Check cursor parameter format",
+            "query": query
+        }
+    except ConnectionError as e:
+        logger.error(f"Connection error in search_devices_by_class: {e}")
+        return {
+            "error": "Failed to search devices due to connection issues",
+            "error_type": "connection",
+            "suggested_action": "Check HomeyPro connectivity and network settings",
+            "query": query,
+            "details": str(e)
+        }
+    except TimeoutError as e:
+        logger.error(f"Timeout error in search_devices_by_class: {e}")
+        return {
+            "error": "Failed to search devices due to timeout",
+            "error_type": "timeout",
+            "suggested_action": "HomeyPro may be overloaded, try again in a few moments",
+            "query": query,
+            "details": str(e)
+        }
     except Exception as e:
-        logger.error(f"Error searching devices: {e}")
-        return {"error": f"Failed to search devices: {e}"}
+        logger.error(f"Unexpected error in search_devices_by_class: {type(e).__name__}: {e}")
+        return {
+            "error": "Failed to search devices due to unexpected error",
+            "error_type": "unknown",
+            "suggested_action": "Check system logs and HomeyPro status",
+            "query": query,
+            "details": f"{type(e).__name__}: {str(e)}"
+        }
 
 
 @mcp.tool()
@@ -353,9 +505,39 @@ async def control_device(
                 "requested_value": value,
             }
 
+    except ConnectionError as e:
+        logger.error(f"Connection error in control_device {device_id}: {e}")
+        return {
+            "error": "Failed to control device due to connection issues",
+            "error_type": "connection",
+            "suggested_action": "Check HomeyPro connectivity and network settings",
+            "device_id": device_id,
+            "capability": capability,
+            "requested_value": value,
+            "details": str(e)
+        }
+    except TimeoutError as e:
+        logger.error(f"Timeout error in control_device {device_id}: {e}")
+        return {
+            "error": "Failed to control device due to timeout",
+            "error_type": "timeout",
+            "suggested_action": "HomeyPro may be overloaded, try again in a few moments",
+            "device_id": device_id,
+            "capability": capability,
+            "requested_value": value,
+            "details": str(e)
+        }
     except Exception as e:
-        logger.error(f"Error controlling device {device_id}: {e}")
-        return {"error": f"Failed to control device: {e}"}
+        logger.error(f"Unexpected error in control_device {device_id}: {type(e).__name__}: {e}")
+        return {
+            "error": "Failed to control device due to unexpected error",
+            "error_type": "unknown",
+            "suggested_action": "Check system logs and HomeyPro status",
+            "device_id": device_id,
+            "capability": capability,
+            "requested_value": value,
+            "details": f"{type(e).__name__}: {str(e)}"
+        }
 
 
 @mcp.tool()
@@ -408,7 +590,41 @@ async def get_device_insights(
         }
 
     except PaginationError as e:
-        return {"error": str(e)}
+        logger.error(f"Pagination error in get_device_insights: {e}")
+        return {
+            "error": f"Pagination error: {str(e)}",
+            "error_type": "pagination",
+            "suggested_action": "Check pagination parameters",
+            "device_id": device_id,
+            "capability": capability
+        }
+    except ConnectionError as e:
+        logger.error(f"Connection error in get_device_insights {device_id}: {e}")
+        return {
+            "error": "Failed to get device insights due to connection issues",
+            "error_type": "connection",
+            "suggested_action": "Check HomeyPro connectivity and network settings",
+            "device_id": device_id,
+            "capability": capability,
+            "details": str(e)
+        }
+    except TimeoutError as e:
+        logger.error(f"Timeout error in get_device_insights {device_id}: {e}")
+        return {
+            "error": "Failed to get device insights due to timeout",
+            "error_type": "timeout",
+            "suggested_action": "HomeyPro may be overloaded, try again in a few moments",
+            "device_id": device_id,
+            "capability": capability,
+            "details": str(e)
+        }
     except Exception as e:
-        logger.error(f"Error getting device insights: {e}")
-        return {"error": f"Failed to get device insights: {e}"}
+        logger.error(f"Unexpected error in get_device_insights {device_id}: {type(e).__name__}: {e}")
+        return {
+            "error": "Failed to get device insights due to unexpected error",
+            "error_type": "unknown",
+            "suggested_action": "Check system logs and HomeyPro status",
+            "device_id": device_id,
+            "capability": capability,
+            "details": f"{type(e).__name__}: {str(e)}"
+        }
