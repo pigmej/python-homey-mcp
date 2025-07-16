@@ -236,12 +236,6 @@ class TestSystemOverviewResource:
         
         # Mock cache to return fresh data
         expected_data = {
-            "system_info": {
-                "name": "HomeyPro Test",
-                "version": "10.0.0",
-                "platform": "homey",
-                "uptime": 86400
-            },
             "device_summary": {
                 "total_count": 2,
                 "online_count": 1,
@@ -259,9 +253,8 @@ class TestSystemOverviewResource:
         
         result = await resources_module.system_overview_resource.fn()
         
-        assert isinstance(result, str)
-        result_str = str(expected_data)
-        assert result == result_str
+        assert isinstance(result, dict)
+        assert result == expected_data
         mock_cache.get_or_fetch.assert_called_once()
     
     @patch.dict('os.environ', {'HOMEY_API_URL': 'http://test.local', 'HOMEY_API_TOKEN': 'test_token'})
@@ -281,9 +274,10 @@ class TestSystemOverviewResource:
         
         result = await resources_module.system_overview_resource.fn()
         
-        assert isinstance(result, str)
-        assert "is_stale" in result
-        assert "connection" in result
+        assert isinstance(result, dict)
+        assert "cache_info" in result
+        assert result["cache_info"]["is_stale"] is True
+        assert result["cache_info"]["error_type"] == "connection"
     
     @patch.dict('os.environ', {'HOMEY_API_URL': 'http://test.local', 'HOMEY_API_TOKEN': 'test_token'})
     @patch('homey_mcp.tools.resources.ensure_client')
@@ -295,9 +289,9 @@ class TestSystemOverviewResource:
         
         result = await resources_module.system_overview_resource.fn()
         
-        assert isinstance(result, str)
-        assert "connection issues" in result
-        assert "error_type" in result
+        assert isinstance(result, dict)
+        assert "connection issues" in result["error"]
+        assert result["error_type"] == "connection"
     
     @patch.dict('os.environ', {'HOMEY_API_URL': 'http://test.local', 'HOMEY_API_TOKEN': 'test_token'})
     @patch('homey_mcp.tools.resources.ensure_client')
@@ -309,9 +303,9 @@ class TestSystemOverviewResource:
         
         result = await resources_module.system_overview_resource.fn()
         
-        assert isinstance(result, str)
-        assert "timeout" in result
-        assert "error_type" in result
+        assert isinstance(result, dict)
+        assert "timeout" in result["error"]
+        assert result["error_type"] == "timeout"
     
     @patch('homey_mcp.tools.resources.ensure_client')
     @patch('homey_mcp.tools.resources._resource_cache')
@@ -322,9 +316,9 @@ class TestSystemOverviewResource:
         
         result = await resources_module.system_overview_resource.fn()
         
-        assert isinstance(result, str)
-        assert "unexpected error" in result
-        assert "error_type" in result
+        assert isinstance(result, dict)
+        assert "unexpected error" in result["error"]
+        assert result["error_type"] == "unknown"
 
 
 class TestDeviceRegistryResource:
@@ -409,9 +403,8 @@ class TestDeviceRegistryResource:
         
         result = await resources_module.device_registry_resource.fn()
         
-        assert isinstance(result, str)
-        result_str = str(expected_data)
-        assert result == result_str
+        assert isinstance(result, dict)
+        assert result == expected_data
         mock_cache.get_or_fetch.assert_called_once()
     
     @patch.dict('os.environ', {'HOMEY_API_URL': 'http://test.local', 'HOMEY_API_TOKEN': 'test_token'})
@@ -424,9 +417,9 @@ class TestDeviceRegistryResource:
         
         result = await resources_module.device_registry_resource.fn()
         
-        assert isinstance(result, str)
-        assert "connection issues" in result
-        assert "error_type" in result
+        assert isinstance(result, dict)
+        assert "connection issues" in result["error"]
+        assert result["error_type"] == "connection"
 
 
 class TestZoneHierarchyResource:
@@ -518,9 +511,8 @@ class TestZoneHierarchyResource:
         
         result = await resources_module.zone_hierarchy_resource.fn()
         
-        assert isinstance(result, str)
-        result_str = str(expected_data)
-        assert result == result_str
+        assert isinstance(result, dict)
+        assert result == expected_data
         mock_cache.get_or_fetch.assert_called_once()
     
     @patch.dict('os.environ', {'HOMEY_API_URL': 'http://test.local', 'HOMEY_API_TOKEN': 'test_token'})
@@ -533,9 +525,9 @@ class TestZoneHierarchyResource:
         
         result = await resources_module.zone_hierarchy_resource.fn()
         
-        assert isinstance(result, str)
-        assert "timeout" in result
-        assert "error_type" in result
+        assert isinstance(result, dict)
+        assert "timeout" in result["error"]
+        assert result["error_type"] == "timeout"
 
 
 class TestFlowCatalogResource:
@@ -651,9 +643,8 @@ class TestFlowCatalogResource:
         
         result = await resources_module.flow_catalog_resource.fn()
         
-        assert isinstance(result, str)
-        result_str = str(expected_data)
-        assert result == result_str
+        assert isinstance(result, dict)
+        assert result == expected_data
         mock_cache.get_or_fetch.assert_called_once()
     
     @patch('homey_mcp.tools.resources.ensure_client')
@@ -665,9 +656,9 @@ class TestFlowCatalogResource:
         
         result = await resources_module.flow_catalog_resource.fn()
         
-        assert isinstance(result, str)
-        assert "unexpected error" in result
-        assert "error_type" in result
+        assert isinstance(result, dict)
+        assert "unexpected error" in result["error"]
+        assert result["error_type"] == "unknown"
 
 
 class TestResourceIntegration:
@@ -688,9 +679,9 @@ class TestResourceIntegration:
         
         for resource_func in resources:
             result = await resource_func()
-            assert isinstance(result, str)
-            assert len(result) > 0
-            assert "connection" in result.lower()
+            assert isinstance(result, dict)
+            assert "error" in result
+            assert result["error_type"] == "connection"
     
     @patch.dict('os.environ', {'HOMEY_API_URL': 'http://test.local', 'HOMEY_API_TOKEN': 'test_token'})
     @patch('homey_mcp.tools.resources._resource_cache')
@@ -707,9 +698,9 @@ class TestResourceIntegration:
         
         for resource_func in resources:
             result = await resource_func()
-            assert isinstance(result, str)
-            assert len(result) > 0
-            assert "timeout" in result.lower()
+            assert isinstance(result, dict)
+            assert "error" in result
+            assert result["error_type"] == "timeout"
     
     @patch('homey_mcp.tools.resources._resource_cache')
     async def test_all_resources_handle_generic_errors(self, mock_cache):
@@ -725,13 +716,13 @@ class TestResourceIntegration:
         
         for resource_func in resources:
             result = await resource_func()
-            assert isinstance(result, str)
-            assert len(result) > 0
-            assert "error" in result.lower()
+            assert isinstance(result, dict)
+            assert "error" in result
+            assert result["error_type"] == "unknown"
     
     @patch('homey_mcp.tools.resources._resource_cache')
-    async def test_all_resources_return_strings(self, mock_cache):
-        """Test that all resources return string data."""
+    async def test_all_resources_return_dicts(self, mock_cache):
+        """Test that all resources return dictionary data."""
         mock_cache.get_or_fetch = AsyncMock(return_value={"test": "data"})
         
         resources = [
@@ -743,7 +734,7 @@ class TestResourceIntegration:
         
         for resource_func in resources:
             result = await resource_func()
-            assert isinstance(result, str)
+            assert isinstance(result, dict)
             assert len(result) > 0
     
     @patch.dict('os.environ', {'HOMEY_API_URL': 'http://test.local', 'HOMEY_API_TOKEN': 'test_token'})
@@ -766,6 +757,7 @@ class TestResourceIntegration:
         
         for resource_func in resources:
             result = await resource_func()
-            assert isinstance(result, str)
+            assert isinstance(result, dict)
             assert len(result) > 0
-            assert "is_stale" in result
+            assert "cache_info" in result
+            assert result["cache_info"]["is_stale"] is True
