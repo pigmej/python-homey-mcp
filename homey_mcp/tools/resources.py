@@ -87,14 +87,14 @@ class SimpleCache:
 _resource_cache = SimpleCache()
 
 
-@mcp.resource("homey://system/overview")
-async def system_overview_resource() -> str:
+@mcp.resource("homey://system/overview", mime_type="application/json")
+async def system_overview_resource() -> Dict[str, Any]:
     """
     Provides comprehensive system overview including device counts, zone counts, 
     and system health indicators.
     
     Returns:
-        JSON string containing system overview data
+        Dictionary containing system overview data
     """
     async def fetch_system_overview():
         try:
@@ -129,12 +129,6 @@ async def system_overview_resource() -> str:
             
             # Build system overview
             overview = {
-                "system_info": {
-                    "name": getattr(system_info, 'name', 'Unknown'),
-                    "version": getattr(system_info, 'version', 'Unknown'),
-                    "platform": getattr(system_info, 'platform', 'Unknown'),
-                    "uptime": getattr(system_info, 'uptime', 0)
-                },
                 "device_summary": {
                     "total_count": total_devices,
                     "online_count": online_devices,
@@ -145,7 +139,7 @@ async def system_overview_resource() -> str:
                 },
                 "zone_summary": {
                     "total_count": total_zones,
-                    "zone_names": [getattr(zone, 'name', 'Unknown') for zone in zones[:10]]  # Limit to first 10
+                    "zone_names": [getattr(zone, 'name', 'Unknown') for zone in zones]
                 },
                 "timestamp": time.time(),
                 "cache_info": {
@@ -172,51 +166,51 @@ async def system_overview_resource() -> str:
             stale_data["cache_info"]["stale_reason"] = "HomeyPro unreachable, using cached data"
             stale_data["cache_info"]["error_type"] = data.get("error_type", "unknown")
             logger.info(f"Returning stale system overview data due to {data.get('error_type', 'unknown')} error")
-            return str(stale_data)
+            return stale_data
         
         logger.debug("Successfully retrieved fresh system overview data")
-        return str(data)
+        return data
         
     except ConnectionError as e:
         logger.error(f"System overview resource connection failed: {e}")
-        return str({
+        return {
             "error": "Failed to retrieve system overview due to connection issues",
             "error_type": "connection",
             "fallback_available": False,
             "suggested_action": "Check HomeyPro connectivity and network settings",
             "timestamp": time.time(),
             "details": str(e)
-        })
+        }
     except TimeoutError as e:
         logger.error(f"System overview resource timeout: {e}")
-        return str({
+        return {
             "error": "Failed to retrieve system overview due to timeout",
             "error_type": "timeout",
             "fallback_available": False,
             "suggested_action": "HomeyPro may be overloaded, try again in a few moments",
             "timestamp": time.time(),
             "details": str(e)
-        })
+        }
     except Exception as e:
         logger.error(f"System overview resource unexpected error: {type(e).__name__}: {e}")
-        return str({
+        return {
             "error": "Failed to retrieve system overview due to unexpected error",
             "error_type": "unknown",
             "fallback_available": False,
             "suggested_action": "Check system logs and HomeyPro status",
             "timestamp": time.time(),
             "details": f"{type(e).__name__}: {str(e)}"
-        })
+        }
 
 
-@mcp.resource("homey://devices/registry")
-async def device_registry_resource() -> str:
+@mcp.resource("homey://devices/registry", mime_type="application/json")
+async def device_registry_resource() -> Dict[str, Any]:
     """
     Provides complete device inventory with current states, capabilities, 
     and online/offline indicators.
     
     Returns:
-        JSON string containing device registry data
+        Dictionary containing device registry data
     """
     async def fetch_device_registry():
         try:
@@ -306,51 +300,51 @@ async def device_registry_resource() -> str:
             stale_data["cache_info"]["stale_reason"] = "HomeyPro unreachable, using cached data"
             stale_data["cache_info"]["error_type"] = data.get("error_type", "unknown")
             logger.info(f"Returning stale device registry data due to {data.get('error_type', 'unknown')} error")
-            return str(stale_data)
+            return stale_data
         
         logger.debug("Successfully retrieved fresh device registry data")
-        return str(data)
+        return data
         
     except ConnectionError as e:
         logger.error(f"Device registry resource connection failed: {e}")
-        return str({
+        return {
             "error": "Failed to retrieve device registry due to connection issues",
             "error_type": "connection",
             "fallback_available": False,
             "suggested_action": "Check HomeyPro connectivity and network settings",
             "timestamp": time.time(),
             "details": str(e)
-        })
+        }
     except TimeoutError as e:
         logger.error(f"Device registry resource timeout: {e}")
-        return str({
+        return {
             "error": "Failed to retrieve device registry due to timeout",
             "error_type": "timeout",
             "fallback_available": False,
             "suggested_action": "HomeyPro may be overloaded, try again in a few moments",
             "timestamp": time.time(),
             "details": str(e)
-        })
+        }
     except Exception as e:
         logger.error(f"Device registry resource unexpected error: {type(e).__name__}: {e}")
-        return str({
+        return {
             "error": "Failed to retrieve device registry due to unexpected error",
             "error_type": "unknown",
             "fallback_available": False,
             "suggested_action": "Check system logs and HomeyPro status",
             "timestamp": time.time(),
             "details": f"{type(e).__name__}: {str(e)}"
-        })
+        }
 
 
-@mcp.resource("homey://zones/hierarchy")
-async def zone_hierarchy_resource() -> str:
+@mcp.resource("homey://zones/hierarchy", mime_type="application/json")
+async def zone_hierarchy_resource() -> Dict[str, Any]:
     """
     Provides zone structure with device associations, including zone relationships 
     and device assignments.
     
     Returns:
-        JSON string containing zone hierarchy data
+        Dictionary containing zone hierarchy data
     """
     async def fetch_zone_hierarchy():
         try:
@@ -453,51 +447,51 @@ async def zone_hierarchy_resource() -> str:
             stale_data["cache_info"]["stale_reason"] = "HomeyPro unreachable, using cached data"
             stale_data["cache_info"]["error_type"] = data.get("error_type", "unknown")
             logger.info(f"Returning stale zone hierarchy data due to {data.get('error_type', 'unknown')} error")
-            return str(stale_data)
+            return stale_data
         
         logger.debug("Successfully retrieved fresh zone hierarchy data")
-        return str(data)
+        return data
         
     except ConnectionError as e:
         logger.error(f"Zone hierarchy resource connection failed: {e}")
-        return str({
+        return {
             "error": "Failed to retrieve zone hierarchy due to connection issues",
             "error_type": "connection",
             "fallback_available": False,
             "suggested_action": "Check HomeyPro connectivity and network settings",
             "timestamp": time.time(),
             "details": str(e)
-        })
+        }
     except TimeoutError as e:
         logger.error(f"Zone hierarchy resource timeout: {e}")
-        return str({
+        return {
             "error": "Failed to retrieve zone hierarchy due to timeout",
             "error_type": "timeout",
             "fallback_available": False,
             "suggested_action": "HomeyPro may be overloaded, try again in a few moments",
             "timestamp": time.time(),
             "details": str(e)
-        })
+        }
     except Exception as e:
         logger.error(f"Zone hierarchy resource unexpected error: {type(e).__name__}: {e}")
-        return str({
+        return {
             "error": "Failed to retrieve zone hierarchy due to unexpected error",
             "error_type": "unknown",
             "fallback_available": False,
             "suggested_action": "Check system logs and HomeyPro status",
             "timestamp": time.time(),
             "details": f"{type(e).__name__}: {str(e)}"
-        })
+        }
 
 
-@mcp.resource("homey://flows/catalog")
-async def flow_catalog_resource() -> str:
+@mcp.resource("homey://flows/catalog", mime_type="application/json")
+async def flow_catalog_resource() -> Dict[str, Any]:
     """
     Provides available flows with metadata, status, and execution statistics.
     Includes flow types, enabled/disabled status, and basic execution info.
     
     Returns:
-        JSON string containing flow catalog data
+        Dictionary containing flow catalog data
     """
     async def fetch_flow_catalog():
         try:
@@ -615,38 +609,38 @@ async def flow_catalog_resource() -> str:
             stale_data["cache_info"]["stale_reason"] = "HomeyPro unreachable, using cached data"
             stale_data["cache_info"]["error_type"] = data.get("error_type", "unknown")
             logger.info(f"Returning stale flow catalog data due to {data.get('error_type', 'unknown')} error")
-            return str(stale_data)
+            return stale_data
         
         logger.debug("Successfully retrieved fresh flow catalog data")
-        return str(data)
+        return data
         
     except ConnectionError as e:
         logger.error(f"Flow catalog resource connection failed: {e}")
-        return str({
+        return {
             "error": "Failed to retrieve flow catalog due to connection issues",
             "error_type": "connection",
             "fallback_available": False,
             "suggested_action": "Check HomeyPro connectivity and network settings",
             "timestamp": time.time(),
             "details": str(e)
-        })
+        }
     except TimeoutError as e:
         logger.error(f"Flow catalog resource timeout: {e}")
-        return str({
+        return {
             "error": "Failed to retrieve flow catalog due to timeout",
             "error_type": "timeout",
             "fallback_available": False,
             "suggested_action": "HomeyPro may be overloaded, try again in a few moments",
             "timestamp": time.time(),
             "details": str(e)
-        })
+        }
     except Exception as e:
         logger.error(f"Flow catalog resource unexpected error: {type(e).__name__}: {e}")
-        return str({
+        return {
             "error": "Failed to retrieve flow catalog due to unexpected error",
             "error_type": "unknown",
             "fallback_available": False,
             "suggested_action": "Check system logs and HomeyPro status",
             "timestamp": time.time(),
             "details": f"{type(e).__name__}: {str(e)}"
-        })
+        }

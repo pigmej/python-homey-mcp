@@ -15,56 +15,62 @@ logger = get_logger(__name__)
 @dataclass
 class PromptContext:
     """Context data for prompts including system summaries."""
+
     system_info: Dict[str, Any]
     device_summary: Dict[str, Any]
     zone_summary: Dict[str, Any]
     flow_summary: Dict[str, Any]
     timestamp: str
-    
+
     @classmethod
     def empty(cls) -> "PromptContext":
         """Create an empty context for fallback scenarios."""
         return cls(
             system_info={"connection_status": "unavailable"},
-            device_summary={"total_count": 0, "online_count": 0, "has_device_types": False, "has_capabilities": False},
+            device_summary={
+                "total_count": 0,
+                "online_count": 0,
+                "has_device_types": False,
+                "has_capabilities": False,
+            },
             zone_summary={"total_count": 0, "zone_names": []},
             flow_summary={"total_count": 0, "enabled_count": 0, "has_flows": False},
-            timestamp=datetime.now().isoformat()
+            timestamp=datetime.now().isoformat(),
         )
 
 
 async def get_prompt_context() -> PromptContext:
     """
     Generate lightweight system context for prompts.
-    
+
     Creates summaries of devices, zones, flows, and system status without
     overwhelming detail. Handles connection failures gracefully by returning
     empty context.
-    
+
     Returns:
         PromptContext with system summaries or empty context on failure
     """
     try:
         client = await ensure_client()
-        
+
         # Get basic system data
         devices = await client.devices.get_devices()
         zones = await client.zones.get_zones()
         flows = await client.flows.get_flows()
         advanced_flows = await client.flows.get_advanced_flows()
         system_config = await client.system.get_system_config()
-        
+
         # Create device summary without overwhelming detail
         online_devices = [d for d in devices if d.is_online()]
         device_classes: Set[str] = set()
         device_capabilities: Set[str] = set()
-        
+
         for device in devices:
             if device.class_:
                 device_classes.add(device.class_)
-            if hasattr(device, 'capabilities') and device.capabilities:
-                device_capabilities.update(device.capabilities.keys())
-        
+            if hasattr(device, "capabilities") and device.capabilities:
+                device_capabilities.update(device.capabilities)
+
         device_summary = {
             "total_count": len(devices),
             "online_count": len(online_devices),
@@ -73,49 +79,54 @@ async def get_prompt_context() -> PromptContext:
             "device_type_count": len(device_classes),
             "has_capabilities": len(device_capabilities) > 0,
             "capability_count": len(device_capabilities),
-            "sample_device_types": list(device_classes)[:5] if device_classes else []
+            "sample_device_types": list(device_classes)[:10] if device_classes else [],
         }
-        
+
         # Create zone summary
         zone_summary = {
             "total_count": len(zones),
-            "zone_names": [z.name for z in zones if hasattr(z, 'name') and z.name],
-            "has_zones": len(zones) > 0
+            "zone_names": [z.name for z in zones if hasattr(z, "name") and z.name],
+            "has_zones": len(zones) > 0,
         }
-        
+
         # Create flow summary
         total_flows = len(flows) + len(advanced_flows)
         enabled_flows = await client.flows.get_enabled_flows()
         enabled_advanced_flows = await client.flows.get_enabled_advanced_flows()
         total_enabled = len(enabled_flows) + len(enabled_advanced_flows)
-        
+
         flow_summary = {
             "total_count": total_flows,
             "enabled_count": total_enabled,
             "disabled_count": total_flows - total_enabled,
             "has_flows": total_flows > 0,
-            "has_advanced_flows": len(advanced_flows) > 0
+            "has_advanced_flows": len(advanced_flows) > 0,
         }
-        
+
         # Create system info summary
         system_info = {
             "connection_status": "connected",
-            "address": getattr(system_config, 'address', 'unknown'),
-            "language": getattr(system_config, 'language', 'unknown'),
-            "units": getattr(system_config, 'units', 'unknown'),
-            "is_metric": system_config.is_metric() if hasattr(system_config, 'is_metric') else False,
-            "location_available": bool(getattr(system_config, 'get_location_coordinates', lambda: None)())
+            "address": getattr(system_config, "address", "unknown"),
+            "language": getattr(system_config, "language", "unknown"),
+            "units": getattr(system_config, "units", "unknown"),
+            "is_metric": system_config.is_metric()
+            if hasattr(system_config, "is_metric")
+            else False,
+            "location_available": bool(
+                getattr(system_config, "get_location_coordinates", lambda: None)()
+            ),
         }
-        
+
         return PromptContext(
             system_info=system_info,
             device_summary=device_summary,
             zone_summary=zone_summary,
             flow_summary=flow_summary,
-            timestamp=datetime.now().isoformat()
+            timestamp=datetime.now().isoformat(),
         )
-        
+
     except Exception as e:
+        raise
         logger.warning(f"Failed to get prompt context: {e}")
         return PromptContext.empty()
 
@@ -124,30 +135,30 @@ async def get_prompt_context() -> PromptContext:
 async def device_control_assistant(arguments: Optional[Dict[str, Any]] = None) -> str:
     """
     Provides structured guidance for controlling HomeyPro devices.
-    
+
     This prompt helps users understand how to control different types of devices
     in their HomeyPro system, including available capabilities and common control
     patterns. It includes contextual information about the current system state.
-    
+
     Args:
         arguments: Optional parameters (not used in this prompt)
-        
+
     Returns:
         Structured template for device control guidance
     """
     try:
         logger.debug("Generating device control assistant prompt")
         context = await get_prompt_context()
-        
+
         prompt_template = f"""# HomeyPro Device Control Assistant
 
 ## Current System Status
-- **Connection**: {context.system_info.get('connection_status', 'unknown')}
-- **Total Devices**: {context.device_summary.get('total_count', 0)}
-- **Online Devices**: {context.device_summary.get('online_count', 0)}
-- **Offline Devices**: {context.device_summary.get('offline_count', 0)}
-- **Device Types Available**: {context.device_summary.get('device_type_count', 0)}
-- **Capabilities Available**: {context.device_summary.get('capability_count', 0)}
+- **Connection**: {context.system_info.get("connection_status", "unknown")}
+- **Total Devices**: {context.device_summary.get("total_count", 0)}
+- **Online Devices**: {context.device_summary.get("online_count", 0)}
+- **Offline Devices**: {context.device_summary.get("offline_count", 0)}
+- **Device Types Available**: {context.device_summary.get("device_type_count", 0)}
+- **Capabilities Available**: {context.device_summary.get("capability_count", 0)}
 
 ## Device Control Guidance
 
@@ -186,11 +197,11 @@ async def device_control_assistant(arguments: Optional[Dict[str, Any]] = None) -
 4. **Group Similar Actions**: Use zones to control multiple devices efficiently
 
 ### Available Device Types in Your System
-{', '.join(context.device_summary.get('sample_device_types', [])) if context.device_summary.get('sample_device_types') else 'No device types detected'}
+{", ".join(context.device_summary.get("sample_device_types", [])) if context.device_summary.get("sample_device_types") else "No device types detected"}
 
 ### Zone-Based Control
-Your system has {context.zone_summary.get('total_count', 0)} zones configured:
-{', '.join(context.zone_summary.get('zone_names', [])) if context.zone_summary.get('zone_names') else 'No zones configured'}
+Your system has {context.zone_summary.get("total_count", 0)} zones configured:
+{", ".join(context.zone_summary.get("zone_names", [])) if context.zone_summary.get("zone_names") else "No zones configured"}
 
 Use zone-based control to manage multiple devices simultaneously within the same area.
 
@@ -203,9 +214,9 @@ Use zone-based control to manage multiple devices simultaneously within the same
 ---
 *System context generated at: {context.timestamp}*
 """
-        
+
         return prompt_template
-        
+
     except Exception as e:
         logger.error(f"Failed to generate device control assistant prompt: {e}")
         return f"""# HomeyPro Device Control Assistant
@@ -230,28 +241,36 @@ Error details: {str(e)}
 async def device_troubleshooting(arguments: Optional[Dict[str, Any]] = None) -> str:
     """
     Provides structured guidance for diagnosing common HomeyPro device issues.
-    
+
     This prompt helps users systematically troubleshoot device problems by
     providing step-by-step diagnostic guidance and system health indicators.
-    
+
     Args:
         arguments: Optional parameters (not used in this prompt)
-        
+
     Returns:
         Structured template for device troubleshooting guidance
     """
     try:
         logger.debug("Generating device troubleshooting prompt")
         context = await get_prompt_context()
-        
+
         # Calculate system health indicators
-        total_devices = context.device_summary.get('total_count', 0)
-        online_devices = context.device_summary.get('online_count', 0)
-        offline_devices = context.device_summary.get('offline_count', 0)
-        
-        health_percentage = (online_devices / total_devices * 100) if total_devices > 0 else 0
-        health_status = "Good" if health_percentage >= 90 else "Warning" if health_percentage >= 70 else "Critical"
-        
+        total_devices = context.device_summary.get("total_count", 0)
+        online_devices = context.device_summary.get("online_count", 0)
+        offline_devices = context.device_summary.get("offline_count", 0)
+
+        health_percentage = (
+            (online_devices / total_devices * 100) if total_devices > 0 else 0
+        )
+        health_status = (
+            "Good"
+            if health_percentage >= 90
+            else "Warning"
+            if health_percentage >= 70
+            else "Critical"
+        )
+
         prompt_template = f"""# HomeyPro Device Troubleshooting Guide
 
 ## System Health Overview
@@ -259,7 +278,7 @@ async def device_troubleshooting(arguments: Optional[Dict[str, Any]] = None) -> 
 - **Total Devices**: {total_devices}
 - **Online Devices**: {online_devices}
 - **Offline Devices**: {offline_devices}
-- **Connection Status**: {context.system_info.get('connection_status', 'unknown')}
+- **Connection Status**: {context.system_info.get("connection_status", "unknown")}
 
 ## Step-by-Step Diagnostic Process
 
@@ -372,7 +391,7 @@ async def device_troubleshooting(arguments: Optional[Dict[str, Any]] = None) -> 
 | Intermittent issues | Check for interference, update firmware |
 
 ### Zone-Specific Issues
-Your zones: {', '.join(context.zone_summary.get('zone_names', [])) if context.zone_summary.get('zone_names') else 'No zones configured'}
+Your zones: {", ".join(context.zone_summary.get("zone_names", [])) if context.zone_summary.get("zone_names") else "No zones configured"}
 
 If multiple devices in the same zone are having issues, consider:
 - Environmental factors (temperature, humidity, interference)
@@ -383,9 +402,9 @@ If multiple devices in the same zone are having issues, consider:
 *Diagnostic information generated at: {context.timestamp}*
 *System health calculated based on current device status*
 """
-        
+
         return prompt_template
-        
+
     except Exception as e:
         logger.error(f"Failed to generate device troubleshooting prompt: {e}")
         return f"""# HomeyPro Device Troubleshooting Guide
@@ -412,28 +431,28 @@ Error details: {str(e)}
 async def device_capability_explorer(arguments: Optional[Dict[str, Any]] = None) -> str:
     """
     Provides guidance for understanding and utilizing HomeyPro device capabilities.
-    
+
     This prompt helps users discover and understand device capabilities without
     overwhelming them with complete capability lists. It focuses on practical
     usage patterns and capability exploration strategies.
-    
+
     Args:
         arguments: Optional parameters (not used in this prompt)
-        
+
     Returns:
         Structured template for device capability exploration guidance
     """
     try:
         logger.debug("Generating device capability explorer prompt")
         context = await get_prompt_context()
-        
+
         prompt_template = f"""# HomeyPro Device Capability Explorer
 
 ## System Capability Overview
-- **Total Devices**: {context.device_summary.get('total_count', 0)}
-- **Device Types**: {context.device_summary.get('device_type_count', 0)} different types
-- **Unique Capabilities**: {context.device_summary.get('capability_count', 0)} available
-- **Sample Device Types**: {', '.join(context.device_summary.get('sample_device_types', [])) if context.device_summary.get('sample_device_types') else 'None detected'}
+- **Total Devices**: {context.device_summary.get("total_count", 0)}
+- **Device Types**: {context.device_summary.get("device_type_count", 0)} different types
+- **Unique Capabilities**: {context.device_summary.get("capability_count", 0)} available
+- **Sample Device Types**: {", ".join(context.device_summary.get("sample_device_types", [])) if context.device_summary.get("sample_device_types") else "None detected"}
 
 ## Understanding Device Capabilities
 
@@ -533,7 +552,7 @@ Common capabilities: `onoff`, `volume_set`, `speaker_playing`, `speaker_track`
 3. Understand common patterns
 
 #### **Use Zone Context**
-Your zones: {', '.join(context.zone_summary.get('zone_names', [])) if context.zone_summary.get('zone_names') else 'No zones configured'}
+Your zones: {", ".join(context.zone_summary.get("zone_names", [])) if context.zone_summary.get("zone_names") else "No zones configured"}
 
 Explore capabilities within specific zones to understand room-based automation possibilities.
 
@@ -586,11 +605,11 @@ Explore capabilities within specific zones to understand room-based automation p
 
 ---
 *Capability information generated at: {context.timestamp}*
-*Based on {context.device_summary.get('total_count', 0)} devices in your system*
+*Based on {context.device_summary.get("total_count", 0)} devices in your system*
 """
-        
+
         return prompt_template
-        
+
     except Exception as e:
         logger.error(f"Failed to generate device capability explorer prompt: {e}")
         return f"""# HomeyPro Device Capability Explorer
@@ -621,28 +640,28 @@ Error details: {str(e)}
 async def flow_creation_assistant(arguments: Optional[Dict[str, Any]] = None) -> str:
     """
     Provides structured guidance for creating HomeyPro automation flows.
-    
+
     This prompt helps users build automation flows by providing templates
     for trigger, condition, and action setup with context about available
     zones and device types in their system.
-    
+
     Args:
         arguments: Optional parameters (not used in this prompt)
-        
+
     Returns:
         Structured template for flow creation guidance
     """
     try:
         logger.debug("Generating flow creation assistant prompt")
         context = await get_prompt_context()
-        
+
         prompt_template = f"""# HomeyPro Flow Creation Assistant
 
 ## Current System Context
-- **Total Devices**: {context.device_summary.get('total_count', 0)} ({context.device_summary.get('online_count', 0)} online)
-- **Available Zones**: {context.zone_summary.get('total_count', 0)} zones
-- **Existing Flows**: {context.flow_summary.get('total_count', 0)} ({context.flow_summary.get('enabled_count', 0)} enabled)
-- **Device Types**: {', '.join(context.device_summary.get('sample_device_types', [])) if context.device_summary.get('sample_device_types') else 'None detected'}
+- **Total Devices**: {context.device_summary.get("total_count", 0)} ({context.device_summary.get("online_count", 0)} online)
+- **Available Zones**: {context.zone_summary.get("total_count", 0)} zones
+- **Existing Flows**: {context.flow_summary.get("total_count", 0)} ({context.flow_summary.get("enabled_count", 0)} enabled)
+- **Device Types**: {", ".join(context.device_summary.get("sample_device_types", [])) if context.device_summary.get("sample_device_types") else "None detected"}
 
 ## Flow Creation Framework
 
@@ -724,12 +743,12 @@ Every HomeyPro flow consists of three main components:
 ### Your System Resources
 
 #### Available Zones
-{', '.join(f'- {zone}' for zone in context.zone_summary.get('zone_names', [])) if context.zone_summary.get('zone_names') else '- No zones configured'}
+{", ".join(f"- {zone}" for zone in context.zone_summary.get("zone_names", [])) if context.zone_summary.get("zone_names") else "- No zones configured"}
 
 Use zones to create location-based automations and control multiple devices in the same area.
 
 #### Device Categories Available
-{', '.join(f'- {device_type}' for device_type in context.device_summary.get('sample_device_types', [])) if context.device_summary.get('sample_device_types') else '- No device types detected'}
+{", ".join(f"- {device_type}" for device_type in context.device_summary.get("sample_device_types", [])) if context.device_summary.get("sample_device_types") else "- No device types detected"}
 
 Consider how different device types can work together in your flows.
 
@@ -853,11 +872,11 @@ THEN: Set thermostat to comfort temperature
 
 ---
 *Flow creation guidance generated at: {context.timestamp}*
-*Based on your system with {context.device_summary.get('total_count', 0)} devices across {context.zone_summary.get('total_count', 0)} zones*
+*Based on your system with {context.device_summary.get("total_count", 0)} devices across {context.zone_summary.get("total_count", 0)} zones*
 """
-        
+
         return prompt_template
-        
+
     except Exception as e:
         logger.error(f"Failed to generate flow creation assistant prompt: {e}")
         return f"""# HomeyPro Flow Creation Assistant
@@ -888,28 +907,28 @@ Error details: {str(e)}
 async def flow_optimization(arguments: Optional[Dict[str, Any]] = None) -> str:
     """
     Provides guidance for improving existing HomeyPro automation flows.
-    
+
     This prompt helps users optimize their automation flows by analyzing
     system performance indicators and providing best practices for
     flow efficiency and reliability.
-    
+
     Args:
         arguments: Optional parameters (not used in this prompt)
-        
+
     Returns:
         Structured template for flow optimization guidance
     """
     try:
         logger.debug("Generating flow optimization prompt")
         context = await get_prompt_context()
-        
+
         # Calculate flow performance indicators
-        total_flows = context.flow_summary.get('total_count', 0)
-        enabled_flows = context.flow_summary.get('enabled_count', 0)
-        disabled_flows = context.flow_summary.get('disabled_count', 0)
-        
+        total_flows = context.flow_summary.get("total_count", 0)
+        enabled_flows = context.flow_summary.get("enabled_count", 0)
+        disabled_flows = context.flow_summary.get("disabled_count", 0)
+
         flow_efficiency = (enabled_flows / total_flows * 100) if total_flows > 0 else 0
-        
+
         prompt_template = f"""# HomeyPro Flow Optimization Guide
 
 ## Current Flow Performance Overview
@@ -917,8 +936,8 @@ async def flow_optimization(arguments: Optional[Dict[str, Any]] = None) -> str:
 - **Enabled Flows**: {enabled_flows}
 - **Disabled Flows**: {disabled_flows}
 - **Flow Efficiency**: {flow_efficiency:.1f}% (enabled vs total)
-- **System Devices**: {context.device_summary.get('total_count', 0)} ({context.device_summary.get('online_count', 0)} online)
-- **Available Zones**: {context.zone_summary.get('total_count', 0)}
+- **System Devices**: {context.device_summary.get("total_count", 0)} ({context.device_summary.get("online_count", 0)} online)
+- **Available Zones**: {context.zone_summary.get("total_count", 0)}
 
 ## Flow Optimization Framework
 
@@ -996,7 +1015,7 @@ async def flow_optimization(arguments: Optional[Dict[str, Any]] = None) -> str:
 ### System-Specific Optimizations
 
 #### **Your Device Categories**
-{', '.join(f'- {device_type}' for device_type in context.device_summary.get('sample_device_types', [])) if context.device_summary.get('sample_device_types') else '- No device types detected'}
+{", ".join(f"- {device_type}" for device_type in context.device_summary.get("sample_device_types", [])) if context.device_summary.get("sample_device_types") else "- No device types detected"}
 
 ##### **Lighting Optimization**
 - Group lights by zone for simultaneous control
@@ -1014,7 +1033,7 @@ async def flow_optimization(arguments: Optional[Dict[str, Any]] = None) -> str:
 - Implement escalating response levels
 
 #### **Your Zone Structure**
-{', '.join(f'- {zone}' for zone in context.zone_summary.get('zone_names', [])) if context.zone_summary.get('zone_names') else '- No zones configured'}
+{", ".join(f"- {zone}" for zone in context.zone_summary.get("zone_names", [])) if context.zone_summary.get("zone_names") else "- No zones configured"}
 
 ##### **Zone-Based Flow Design**
 - Create zone-specific flows instead of device-specific ones
@@ -1043,7 +1062,7 @@ async def flow_optimization(arguments: Optional[Dict[str, Any]] = None) -> str:
 ```
 BEFORE:
 Flow 1: WHEN motion in living room THEN turn on living room light
-Flow 2: WHEN motion in kitchen THEN turn on kitchen light  
+Flow 2: WHEN motion in kitchen THEN turn on kitchen light
 Flow 3: WHEN motion in hallway THEN turn on hallway light
 ```
 
@@ -1142,9 +1161,9 @@ Single Flow: WHEN temperature changes THEN maintain temperature between 20-24°C
 *Flow optimization guidance generated at: {context.timestamp}*
 *Analysis based on {total_flows} flows in your system with {flow_efficiency:.1f}% efficiency rate*
 """
-        
+
         return prompt_template
-        
+
     except Exception as e:
         logger.error(f"Failed to generate flow optimization prompt: {e}")
         return f"""# HomeyPro Flow Optimization Guide
@@ -1177,38 +1196,40 @@ Error details: {str(e)}
 async def flow_debugging(arguments: Optional[Dict[str, Any]] = None) -> str:
     """
     Provides structured approach for troubleshooting HomeyPro flow issues.
-    
+
     This prompt helps users systematically debug flow problems by providing
     diagnostic templates and system context for identifying common flow issues
     and their solutions.
-    
+
     Args:
         arguments: Optional parameters (not used in this prompt)
-        
+
     Returns:
         Structured template for flow debugging guidance
     """
     try:
         logger.debug("Generating flow debugging prompt")
         context = await get_prompt_context()
-        
+
         # Calculate system health indicators for debugging context
-        total_flows = context.flow_summary.get('total_count', 0)
-        enabled_flows = context.flow_summary.get('enabled_count', 0)
-        total_devices = context.device_summary.get('total_count', 0)
-        online_devices = context.device_summary.get('online_count', 0)
-        offline_devices = context.device_summary.get('offline_count', 0)
-        
-        device_health = (online_devices / total_devices * 100) if total_devices > 0 else 0
-        
+        total_flows = context.flow_summary.get("total_count", 0)
+        enabled_flows = context.flow_summary.get("enabled_count", 0)
+        total_devices = context.device_summary.get("total_count", 0)
+        online_devices = context.device_summary.get("online_count", 0)
+        offline_devices = context.device_summary.get("offline_count", 0)
+
+        device_health = (
+            (online_devices / total_devices * 100) if total_devices > 0 else 0
+        )
+
         prompt_template = f"""# HomeyPro Flow Debugging Guide
 
 ## Current System Status for Debugging
 - **Flow Status**: {enabled_flows}/{total_flows} flows enabled
 - **Device Health**: {device_health:.1f}% ({online_devices}/{total_devices} devices online)
 - **Offline Devices**: {offline_devices} (potential flow impact)
-- **System Zones**: {context.zone_summary.get('total_count', 0)} configured
-- **Connection Status**: {context.system_info.get('connection_status', 'unknown')}
+- **System Zones**: {context.zone_summary.get("total_count", 0)} configured
+- **Connection Status**: {context.system_info.get("connection_status", "unknown")}
 
 ## Flow Debugging Framework
 
@@ -1419,12 +1440,12 @@ async def flow_debugging(arguments: Optional[Dict[str, Any]] = None) -> str:
 ### Your System Context for Debugging
 
 #### **Device Categories to Check**
-{', '.join(f'- {device_type}' for device_type in context.device_summary.get('sample_device_types', [])) if context.device_summary.get('sample_device_types') else '- No device types detected'}
+{", ".join(f"- {device_type}" for device_type in context.device_summary.get("sample_device_types", [])) if context.device_summary.get("sample_device_types") else "- No device types detected"}
 
 Focus debugging efforts on flows involving these device types, as they're present in your system.
 
 #### **Zone-Based Debugging**
-{', '.join(f'- {zone}' for zone in context.zone_summary.get('zone_names', [])) if context.zone_summary.get('zone_names') else '- No zones configured'}
+{", ".join(f"- {zone}" for zone in context.zone_summary.get("zone_names", [])) if context.zone_summary.get("zone_names") else "- No zones configured"}
 
 Consider zone-specific issues when debugging flows that involve multiple zones or zone-based triggers.
 
@@ -1461,9 +1482,9 @@ Consider zone-specific issues when debugging flows that involve multiple zones o
 *Flow debugging guidance generated at: {context.timestamp}*
 *System analysis based on {total_flows} flows and {total_devices} devices*
 """
-        
+
         return prompt_template
-        
+
     except Exception as e:
         logger.error(f"Failed to generate flow debugging prompt: {e}")
         return f"""# HomeyPro Flow Debugging Guide
@@ -1497,31 +1518,31 @@ Error details: {str(e)}
 async def zone_organization(arguments: Optional[Dict[str, Any]] = None) -> str:
     """
     Provides best practices template for organizing zones and devices in HomeyPro.
-    
+
     This prompt helps users efficiently organize their zones and devices by
     providing guidance for zone management, device assignment, and optimization
     strategies based on their current zone structure.
-    
+
     Args:
         arguments: Optional parameters (not used in this prompt)
-        
+
     Returns:
         Structured template for zone organization guidance
     """
     try:
         logger.debug("Generating zone organization prompt")
         context = await get_prompt_context()
-        
+
         # Calculate zone organization metrics
-        total_zones = context.zone_summary.get('total_count', 0)
-        zone_names = context.zone_summary.get('zone_names', [])
-        total_devices = context.device_summary.get('total_count', 0)
-        online_devices = context.device_summary.get('online_count', 0)
-        device_types = context.device_summary.get('sample_device_types', [])
-        
+        total_zones = context.zone_summary.get("total_count", 0)
+        zone_names = context.zone_summary.get("zone_names", [])
+        total_devices = context.device_summary.get("total_count", 0)
+        online_devices = context.device_summary.get("online_count", 0)
+        device_types = context.device_summary.get("sample_device_types", [])
+
         # Calculate average devices per zone (rough estimate)
         avg_devices_per_zone = (total_devices / total_zones) if total_zones > 0 else 0
-        
+
         prompt_template = f"""# HomeyPro Zone Organization Guide
 
 ## Current Zone Structure Analysis
@@ -1529,10 +1550,18 @@ async def zone_organization(arguments: Optional[Dict[str, Any]] = None) -> str:
 - **Total Devices**: {total_devices} ({online_devices} online)
 - **Average Devices per Zone**: {avg_devices_per_zone:.1f}
 - **Device Types Available**: {len(device_types)} types
-- **Zone Organization Status**: {'Well-structured' if total_zones >= 3 and avg_devices_per_zone <= 10 else 'Needs optimization'}
+- **Zone Organization Status**: {
+            "Well-structured"
+            if total_zones >= 3 and avg_devices_per_zone <= 10
+            else "Needs optimization"
+        }
 
 ## Your Current Zones
-{chr(10).join(f'- **{zone}**' for zone in zone_names) if zone_names else '- No zones configured yet'}
+{
+            chr(10).join(f"- **{zone}**" for zone in zone_names)
+            if zone_names
+            else "- No zones configured yet"
+        }
 
 ## Zone Organization Framework
 
@@ -1674,23 +1703,36 @@ Some devices affect multiple zones:
 #### **Current System Analysis**
 Based on your {total_zones} zones and {total_devices} devices:
 
-{f'''
+{
+            f'''
 **Optimization Recommendations:**
 - Your system appears well-balanced with {avg_devices_per_zone:.1f} devices per zone
 - Consider grouping similar device types within zones for easier management
 - Review zone names for clarity and consistency
-''' if total_zones > 0 and avg_devices_per_zone <= 10 else f'''
+'''
+            if total_zones > 0 and avg_devices_per_zone <= 10
+            else f'''
 **Optimization Needed:**
-- {'Consider creating zones to organize your devices' if total_zones == 0 else f'Consider redistributing devices - {avg_devices_per_zone:.1f} devices per zone may be too many'}
+- {"Consider creating zones to organize your devices" if total_zones == 0 else f"Consider redistributing devices - {avg_devices_per_zone:.1f} devices per zone may be too many"}
 - Start with basic room-based zones
 - Group devices by physical location first
-'''}
+'''
+        }
 
 #### **Device Type Distribution**
-Your available device types: {', '.join(device_types) if device_types else 'None detected'}
+Your available device types: {
+            ", ".join(device_types) if device_types else "None detected"
+        }
 
 **Suggested Zone Assignments:**
-{chr(10).join(f'- **{device_type}**: Assign to zones based on physical location and primary usage area' for device_type in device_types[:5]) if device_types else '- No device types detected for specific recommendations'}
+{
+            chr(10).join(
+                f"- **{device_type}**: Assign to zones based on physical location and primary usage area"
+                for device_type in device_types[:5]
+            )
+            if device_types
+            else "- No device types detected for specific recommendations"
+        }
 
 #### **Performance Optimization**
 - **Zone Size**: Keep zones manageable (5-15 devices per zone ideal)
@@ -1741,7 +1783,7 @@ Your available device types: {', '.join(device_types) if device_types else 'None
 ```
 Flow: Morning Activation
 WHEN: 7:00 AM on weekdays
-THEN: 
+THEN:
 - Turn on Kitchen lights to 80%
 - Set Living Room temperature to 22°C
 - Turn on Master Bedroom lights to 30%
@@ -1825,9 +1867,9 @@ THEN:
 *Zone organization guidance generated at: {context.timestamp}*
 *Analysis based on your {total_zones} zones and {total_devices} devices*
 """
-        
+
         return prompt_template
-        
+
     except Exception as e:
         logger.error(f"Failed to generate zone organization prompt: {e}")
         return f"""# HomeyPro Zone Organization Guide
@@ -1860,31 +1902,33 @@ Error details: {str(e)}
 async def system_health_check(arguments: Optional[Dict[str, Any]] = None) -> str:
     """
     Provides comprehensive system diagnostic template for HomeyPro health assessment.
-    
+
     This prompt helps users perform systematic health checks of their HomeyPro
     system by providing structured diagnostic guidance and system status analysis.
-    
+
     Args:
         arguments: Optional parameters (not used in this prompt)
-        
+
     Returns:
         Structured template for system health check guidance
     """
     try:
         logger.debug("Generating system health check prompt")
         context = await get_prompt_context()
-        
+
         # Calculate comprehensive system health metrics
-        total_devices = context.device_summary.get('total_count', 0)
-        online_devices = context.device_summary.get('online_count', 0)
-        offline_devices = context.device_summary.get('offline_count', 0)
-        total_zones = context.zone_summary.get('total_count', 0)
-        total_flows = context.flow_summary.get('total_count', 0)
-        enabled_flows = context.flow_summary.get('enabled_count', 0)
-        
-        device_health = (online_devices / total_devices * 100) if total_devices > 0 else 0
+        total_devices = context.device_summary.get("total_count", 0)
+        online_devices = context.device_summary.get("online_count", 0)
+        offline_devices = context.device_summary.get("offline_count", 0)
+        total_zones = context.zone_summary.get("total_count", 0)
+        total_flows = context.flow_summary.get("total_count", 0)
+        enabled_flows = context.flow_summary.get("enabled_count", 0)
+
+        device_health = (
+            (online_devices / total_devices * 100) if total_devices > 0 else 0
+        )
         flow_efficiency = (enabled_flows / total_flows * 100) if total_flows > 0 else 0
-        
+
         # Determine overall system health status
         if device_health >= 95 and flow_efficiency >= 80:
             overall_status = "Excellent"
@@ -1898,18 +1942,18 @@ async def system_health_check(arguments: Optional[Dict[str, Any]] = None) -> str
         else:
             overall_status = "Needs Attention"
             status_color = "🔴"
-        
+
         prompt_template = f"""# HomeyPro System Health Check
 
 ## Overall System Status: {status_color} {overall_status}
 
 ### Quick Health Summary
-- **System Connection**: {context.system_info.get('connection_status', 'unknown').title()}
+- **System Connection**: {context.system_info.get("connection_status", "unknown").title()}
 - **Device Health**: {device_health:.1f}% ({online_devices}/{total_devices} devices online)
 - **Flow Efficiency**: {flow_efficiency:.1f}% ({enabled_flows}/{total_flows} flows enabled)
 - **Zone Organization**: {total_zones} zones configured
-- **System Language**: {context.system_info.get('language', 'unknown')}
-- **Units System**: {context.system_info.get('units', 'unknown')}
+- **System Language**: {context.system_info.get("language", "unknown")}
+- **Units System**: {context.system_info.get("units", "unknown")}
 
 ## Comprehensive Health Assessment
 
@@ -1919,20 +1963,20 @@ async def system_health_check(arguments: Optional[Dict[str, Any]] = None) -> str
 - **Total Devices**: {total_devices}
 - **Online Devices**: {online_devices} ({device_health:.1f}%)
 - **Offline Devices**: {offline_devices}
-- **Device Types**: {context.device_summary.get('device_type_count', 0)} different types
-- **Available Capabilities**: {context.device_summary.get('capability_count', 0)}
+- **Device Types**: {context.device_summary.get("device_type_count", 0)} different types
+- **Available Capabilities**: {context.device_summary.get("capability_count", 0)}
 
 #### **Device Health Indicators**
-{'🟢 Excellent device connectivity' if device_health >= 95 else '🟡 Good device connectivity' if device_health >= 85 else '🟠 Fair device connectivity - some devices offline' if device_health >= 70 else '🔴 Poor device connectivity - many devices offline'}
+{"🟢 Excellent device connectivity" if device_health >= 95 else "🟡 Good device connectivity" if device_health >= 85 else "🟠 Fair device connectivity - some devices offline" if device_health >= 70 else "🔴 Poor device connectivity - many devices offline"}
 
 ### 2. System Configuration Health
 
 #### **System Settings Status**
-- **HomeyPro Address**: {context.system_info.get('address', 'Not configured')}
-- **Language Setting**: {context.system_info.get('language', 'Not configured')}
-- **Units System**: {context.system_info.get('units', 'Not configured')}
-- **Metric System**: {'Yes' if context.system_info.get('is_metric', False) else 'No'}
-- **Location Services**: {'Configured' if context.system_info.get('location_available', False) else 'Not configured'}
+- **HomeyPro Address**: {context.system_info.get("address", "Not configured")}
+- **Language Setting**: {context.system_info.get("language", "Not configured")}
+- **Units System**: {context.system_info.get("units", "Not configured")}
+- **Metric System**: {"Yes" if context.system_info.get("is_metric", False) else "No"}
+- **Location Services**: {"Configured" if context.system_info.get("location_available", False) else "Not configured"}
 
 ### 3. Health Check Action Items
 
@@ -1949,9 +1993,9 @@ async def system_health_check(arguments: Optional[Dict[str, Any]] = None) -> str
 *System health assessment generated at: {context.timestamp}*
 *Overall Status: {overall_status}*
 """
-        
+
         return prompt_template
-        
+
     except Exception as e:
         logger.error(f"Failed to generate system health check prompt: {e}")
         return f"""# HomeyPro System Health Check
