@@ -477,7 +477,7 @@ wheels = [
 [[package]]
 name = "python-homey"
 version = "0.1.0"
-source = { git = "https://github.com/pigmej/python-homey.git#386aad4f103f95fa3ab11a4cb76c840e9dbcc0a0" }
+source = { git = "https://github.com/pigmej/python-homey.git#e35f38da1ab58b6ccd699dabb67d5bc1f1014fc2" }
 dependencies = [
     { name = "dotenv" },
     { name = "httpx" },
