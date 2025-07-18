@@ -277,14 +277,17 @@ The server provides comprehensive API tools for direct HomeyPro interaction. All
 
 ### Flow Tools
 
-#### Basic Flow Management
-- **`list_flows`**: List all standard flows with pagination
+#### Unified Flow Management
+- **`list_flows`**: List all flows (both normal and advanced) with pagination
+  - Automatically combines normal and advanced flows
+  - Each flow includes a `flow_type` field ("normal" or "advanced")
   - Complete flow metadata and configuration
-  - Trigger, condition, and action information
+  - Seamless pagination across combined results
 
-- **`trigger_flow`**: Execute a specific flow
-  - Manual flow triggering
-  - Success confirmation with flow details
+- **`trigger_flow`**: Execute any flow (automatically detects type)
+  - Automatically detects whether flow is normal or advanced
+  - Manual flow triggering with unified interface
+  - Success confirmation with flow details and type
 
 - **`get_flow_folders`**: Get all flow organization folders
   - Flow organization structure
@@ -298,56 +301,20 @@ The server provides comprehensive API tools for direct HomeyPro interaction. All
   - Find flows that need organization
   - Cleanup and maintenance assistance
 
-#### Advanced Flow Management
-- **`list_advanced_flows`**: List all advanced flows
-  - Complex automation flows with scripting
-  - Complete flow structure and metadata
+#### Flow Organization
+- **`get_flow_folders`**: Get all flow organization folders
+  - Flow organization structure
+  - Folder hierarchy for better management
 
-- **`get_advanced_flow`**: Get detailed advanced flow information
-  - Full flow configuration and logic
-  - Script content and execution details
+- **`get_flows_by_folder`**: Get flows in a specific folder
+  - Folder-based flow filtering
+  - Organizational flow management
+  - Note: Only returns normal flows in folder
 
-- **`trigger_advanced_flow`**: Execute advanced flows
-  - Manual triggering of complex automations
-  - Execution confirmation and status
-
-#### Advanced Flow Search and Filtering
-- **`search_advanced_flows`**: Search advanced flows by name/description
-  - Text-based flow discovery
-  - Paginated search results
-
-- **`get_enabled_advanced_flows`**: Get only enabled advanced flows
-  - Active automation discovery
-  - Performance and maintenance insights
-
-- **`get_disabled_advanced_flows`**: Get disabled advanced flows
-  - Inactive flow identification
-  - Maintenance and cleanup assistance
-
-- **`get_broken_advanced_flows`**: Get flows with errors
-  - Error detection and troubleshooting
-  - System health monitoring
-
-- **`get_advanced_flows_by_folder`**: Get advanced flows in folders
-  - Organized advanced flow management
-  - Folder-based filtering
-
-- **`get_advanced_flows_without_folder`**: Get unorganized advanced flows
-  - Organization and cleanup assistance
-  - Flow management optimization
-
-- **`get_advanced_flows_with_inline_scripts`**: Get flows containing scripts
-  - Script-based automation identification
-  - Advanced functionality discovery
-
-#### Flow State Management
-- **`enable_advanced_flow`**: Enable a disabled advanced flow
-  - Flow activation with confirmation
-  - State management and control
-
-- **`disable_advanced_flow`**: Disable an active advanced flow
-  - Flow deactivation for maintenance
-  - Temporary automation suspension
+- **`get_flows_without_folder`**: Get unorganized flows
+  - Find flows that need organization
+  - Cleanup and maintenance assistance
+  - Note: Only returns normal flows without folder
 
 ### System Tools
 
