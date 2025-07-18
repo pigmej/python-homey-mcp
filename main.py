@@ -6,46 +6,33 @@ A Model Context Protocol (MCP) server for interacting with HomeyPro home automat
 Provides paginated access to devices, zones, and flows with comprehensive management capabilities.
 """
 
-import asyncio
 import os
-
-from homey_mcp.client.manager import ensure_client, disconnect_client
-from homey_mcp.utils.logging import get_logger
 from homey_mcp.mcp_instance import mcp
 from homey_mcp.tools import register_all_tools
+from homey_mcp.utils.logging import get_logger
 
 # Register all tools at import time
 register_all_tools()
 
 logger = get_logger(__name__)
 
+# Validate environment variables at import time
+def validate_environment():
+    """Validate required environment variables."""
+    required_vars = ["HOMEY_API_URL", "HOMEY_API_TOKEN"]
+    missing_vars = []
+    
+    for var in required_vars:
+        if not os.getenv(var):
+            missing_vars.append(var)
+    
+    if missing_vars:
+        error_msg = f"Missing required environment variables: {', '.join(missing_vars)}"
+        logger.error(error_msg)
+        raise ValueError(error_msg)
 
-async def main():
-    """Run the MCP server."""
-    try:
-        # Validate environment variables
-        if not os.getenv("HOMEY_API_URL"):
-            logger.error("HOMEY_API_URL environment variable is required")
-            return
+# Validate environment when module is imported
+validate_environment()
 
-        if not os.getenv("HOMEY_API_TOKEN"):
-            logger.error("HOMEY_API_TOKEN environment variable is required")
-            return
-
-        # Test connection
-        await ensure_client()
-
-        # Run the server
-        await mcp.run()
-
-    except KeyboardInterrupt:
-        logger.info("Server shutdown requested")
-    except Exception as e:
-        logger.error(f"Server error: {e}")
-    finally:
-        # Cleanup
-        await disconnect_client()
-
-
-if __name__ == "__main__":
-    asyncio.run(main())
+# Export the mcp instance for FastMCP CLI
+__all__ = ["mcp"]

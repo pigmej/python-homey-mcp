@@ -69,10 +69,63 @@ You can find your HomeyPro's IP address in:
 
 ### Running the Server
 
+#### Using uvx (Recommended)
+
+The easiest way to run the server is using `uvx`:
+
+```bash
+# Set your environment variables
+export HOMEY_API_URL="http://YOUR_HOMEY_IP_ADDRESS"
+export HOMEY_API_TOKEN="YOUR_PERSONAL_ACCESS_TOKEN"
+
+# Run with uvx
+uvx --from . homey-mcp
+```
+
+Or run directly with FastMCP CLI:
+
+```bash
+# HTTP transport (recommended for testing)
+uvx fastmcp run main.py --transport http --host 0.0.0.0 --port 4445
+
+# STDIO transport (for MCP clients)
+uvx fastmcp run main.py --transport stdio
+```
+
 #### Local Development
 
 ```bash
+# Using uv run
+uv run fastmcp run main.py --transport http --host 0.0.0.0 --port 4445 --log-level DEBUG
+
+# Or the old way
 uv run fastmcp run -t http --host 0.0.0.0 -p 4445 -l DEBUG main.py
+```
+
+#### Installing in MCP Clients
+
+You can install this server directly in MCP clients using FastMCP:
+
+```bash
+# Install in Claude Desktop
+uvx fastmcp install claude-desktop main.py \
+  --env-var HOMEY_API_URL=http://YOUR_HOMEY_IP_ADDRESS \
+  --env-var HOMEY_API_TOKEN=YOUR_PERSONAL_ACCESS_TOKEN
+
+# Install in Claude Code
+uvx fastmcp install claude-code main.py \
+  --env-var HOMEY_API_URL=http://YOUR_HOMEY_IP_ADDRESS \
+  --env-var HOMEY_API_TOKEN=YOUR_PERSONAL_ACCESS_TOKEN
+
+# Install in Cursor
+uvx fastmcp install cursor main.py \
+  --env-var HOMEY_API_URL=http://YOUR_HOMEY_IP_ADDRESS \
+  --env-var HOMEY_API_TOKEN=YOUR_PERSONAL_ACCESS_TOKEN
+
+# Generate MCP JSON config
+uvx fastmcp install mcp-json main.py \
+  --env-var HOMEY_API_URL=http://YOUR_HOMEY_IP_ADDRESS \
+  --env-var HOMEY_API_TOKEN=YOUR_PERSONAL_ACCESS_TOKEN
 ```
 
 #### Docker Container
