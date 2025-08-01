@@ -7,6 +7,7 @@ from typing import Any, Callable, Dict, Optional
 from ..client.manager import ensure_client
 from ..utils.logging import get_logger
 from ..mcp_instance import mcp
+from ..exceptions import HomeyConnectionError, HomeyTimeoutError
 
 logger = get_logger(__name__)
 
@@ -58,14 +59,14 @@ class SimpleCache:
             self._cache[key] = CacheEntry(data, time.time(), ttl)
             logger.debug(f"Successfully cached fresh data for key: {key}")
             return data
-        except ConnectionError as e:
+        except (ConnectionError, HomeyConnectionError) as e:
             logger.warning(f"Connection error for {key}: {e}")
             if entry:
                 logger.info(f"Using stale cache for {key} due to connection error")
                 return {"data": entry.data, "is_stale": True, "error_type": "connection"}
             logger.error(f"Connection failed for {key} and no stale data available")
             raise
-        except TimeoutError as e:
+        except (TimeoutError, HomeyTimeoutError) as e:
             logger.warning(f"Timeout error for {key}: {e}")
             if entry:
                 logger.info(f"Using stale cache for {key} due to timeout")
@@ -171,7 +172,7 @@ async def system_overview_resource() -> Dict[str, Any]:
         logger.debug("Successfully retrieved fresh system overview data")
         return data
         
-    except ConnectionError as e:
+    except (ConnectionError, HomeyConnectionError) as e:
         logger.error(f"System overview resource connection failed: {e}")
         return {
             "error": "Failed to retrieve system overview due to connection issues",
@@ -181,7 +182,7 @@ async def system_overview_resource() -> Dict[str, Any]:
             "timestamp": time.time(),
             "details": str(e)
         }
-    except TimeoutError as e:
+    except (TimeoutError, HomeyTimeoutError) as e:
         logger.error(f"System overview resource timeout: {e}")
         return {
             "error": "Failed to retrieve system overview due to timeout",
@@ -305,7 +306,7 @@ async def device_registry_resource() -> Dict[str, Any]:
         logger.debug("Successfully retrieved fresh device registry data")
         return data
         
-    except ConnectionError as e:
+    except (ConnectionError, HomeyConnectionError) as e:
         logger.error(f"Device registry resource connection failed: {e}")
         return {
             "error": "Failed to retrieve device registry due to connection issues",
@@ -315,7 +316,7 @@ async def device_registry_resource() -> Dict[str, Any]:
             "timestamp": time.time(),
             "details": str(e)
         }
-    except TimeoutError as e:
+    except (TimeoutError, HomeyTimeoutError) as e:
         logger.error(f"Device registry resource timeout: {e}")
         return {
             "error": "Failed to retrieve device registry due to timeout",
@@ -452,7 +453,7 @@ async def zone_hierarchy_resource() -> Dict[str, Any]:
         logger.debug("Successfully retrieved fresh zone hierarchy data")
         return data
         
-    except ConnectionError as e:
+    except (ConnectionError, HomeyConnectionError) as e:
         logger.error(f"Zone hierarchy resource connection failed: {e}")
         return {
             "error": "Failed to retrieve zone hierarchy due to connection issues",
@@ -462,7 +463,7 @@ async def zone_hierarchy_resource() -> Dict[str, Any]:
             "timestamp": time.time(),
             "details": str(e)
         }
-    except TimeoutError as e:
+    except (TimeoutError, HomeyTimeoutError) as e:
         logger.error(f"Zone hierarchy resource timeout: {e}")
         return {
             "error": "Failed to retrieve zone hierarchy due to timeout",
@@ -614,7 +615,7 @@ async def flow_catalog_resource() -> Dict[str, Any]:
         logger.debug("Successfully retrieved fresh flow catalog data")
         return data
         
-    except ConnectionError as e:
+    except (ConnectionError, HomeyConnectionError) as e:
         logger.error(f"Flow catalog resource connection failed: {e}")
         return {
             "error": "Failed to retrieve flow catalog due to connection issues",
@@ -624,7 +625,7 @@ async def flow_catalog_resource() -> Dict[str, Any]:
             "timestamp": time.time(),
             "details": str(e)
         }
-    except TimeoutError as e:
+    except (TimeoutError, HomeyTimeoutError) as e:
         logger.error(f"Flow catalog resource timeout: {e}")
         return {
             "error": "Failed to retrieve flow catalog due to timeout",
