@@ -51,6 +51,79 @@ export HOMEY_API_URL="http://YOUR_HOMEY_IP_ADDRESS"
 export HOMEY_API_TOKEN="YOUR_PERSONAL_ACCESS_TOKEN"
 ```
 
+### Optional Tools Configuration
+
+By default, all individual tools are enabled. You can selectively disable or enable specific tools to reduce model confusion:
+
+#### Disable Specific Tools
+
+To disable specific individual tools, set the `HOMEY_DISABLED_TOOLS` environment variable:
+
+```bash
+# Disable device control and insights tools (keep device listing and search)
+export HOMEY_DISABLED_TOOLS="control_device,get_device_insights"
+
+# Disable all device management tools
+export HOMEY_DISABLED_TOOLS="list_devices,get_device,get_devices_classes,get_devices_capabilities,search_devices_by_name,search_devices_by_class,control_device,get_device_insights"
+```
+
+#### Enable Only Specific Tools
+
+To enable only specific individual tools, set the `HOMEY_ENABLED_TOOLS` environment variable:
+
+```bash
+# Enable only system info and zone listing (minimal configuration)
+export HOMEY_ENABLED_TOOLS="get_system_info,list_zones"
+
+# Enable basic device and zone management without control capabilities
+export HOMEY_ENABLED_TOOLS="get_system_info,list_devices,get_device,list_zones,get_zone_devices"
+```
+
+**Available individual tools:**
+
+**Device Tools:**
+- `list_devices` - List all devices with pagination
+- `get_device` - Get detailed device information
+- `get_devices_classes` - List available device classes
+- `get_devices_capabilities` - List available device capabilities  
+- `search_devices_by_name` - Search devices by name
+- `search_devices_by_class` - Search devices by class
+- `control_device` - Control device capabilities
+- `get_device_insights` - Get device insights/analytics
+
+**Flow Tools:**
+- `list_flows` - List all flows (normal and advanced)
+- `trigger_flow` - Trigger a specific flow
+- `get_flow_folders` - Get flow folder structure
+- `get_flows_by_folder` - Get flows in a specific folder
+- `get_flows_without_folder` - Get flows not in any folder
+
+**Zone Tools:**
+- `list_zones` - List all zones
+- `get_zone_devices` - Get devices in a specific zone
+- `get_zone_temp` - Get temperature data for a zone
+
+**System Tools:**
+- `get_system_info` - Get system information and statistics
+
+**Note:** Prompts and resources are always available regardless of tool configuration.
+
+#### List Available Tools
+
+To see which tools are currently enabled, you can use FastMCP's built-in `list_tools()` method. Disabled tools will not appear in this list, which is the intended behavior.
+
+When running the MCP server, only enabled tools will be available to clients.
+
+#### Implementation Notes
+
+Tools use standard `@mcp.tool()` decorators and are configured post-startup:
+- All tools are registered normally with `@mcp.tool()`  
+- After registration, tools are selectively disabled using FastMCP's `.disable()` method
+- Environment variables are processed to determine which tools to disable
+- Disabled tools won't appear in `list_tools()` and can't be called
+
+This approach keeps the code simple while leveraging FastMCP's native tool management.
+
 ### Getting Your HomeyPro Token
 
 1. Open the HomeyPro web interface

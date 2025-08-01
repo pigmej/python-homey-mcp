@@ -5,8 +5,9 @@ description = "HomeyPro MCP Server - A Model Context Protocol server for HomeyPr
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "fastmcp>=2.10.2", 
+    "fastmcp>=2.10.2",
     "python-homey",
+    "typing-extensions>=4.14.1",
 ]
 
 [project.scripts]
