@@ -1,5 +1,6 @@
 """Integration tests for the registration system."""
 
+import os
 import pytest
 import pytest_asyncio
 from unittest.mock import patch, MagicMock
@@ -36,14 +37,15 @@ class TestRegistrationSystem:
         result = register_all_tools()
         
         # Verify all modules are returned
-        assert len(result) == 6
-        devices, flows, zones, system, prompts, resources = result
+        assert len(result) == 7
+        devices, flows, zones, system, health, prompts, resources = result
         
         # Verify module names
         assert devices.__name__ == 'homey_mcp.tools.devices'
         assert flows.__name__ == 'homey_mcp.tools.flows'
         assert zones.__name__ == 'homey_mcp.tools.zones'
         assert system.__name__ == 'homey_mcp.tools.system'
+        assert health.__name__ == 'homey_mcp.tools.health'
         assert prompts.__name__ == 'homey_mcp.tools.prompts'
         assert resources.__name__ == 'homey_mcp.tools.resources'
     
@@ -56,10 +58,10 @@ class TestRegistrationSystem:
         result2 = register_all_tools()
         
         # Should return the same modules
-        assert len(result1) == len(result2) == 6
+        assert len(result1) == len(result2) == 7
         
         # Modules should be the same objects (cached imports)
-        for i in range(6):
+        for i in range(7):
             assert result1[i] is result2[i]
     
     def test_tools_module_has_mcp_decorators(self):
@@ -174,6 +176,7 @@ class TestRegistrationSystem:
         assert callable(mcp.prompt)
         assert callable(mcp.resource)
     
+    @pytest.mark.asyncio
     @patch.dict('os.environ', {'HOMEY_API_URL': 'http://test.local', 'HOMEY_API_TOKEN': 'test_token'})
     @patch('homey_mcp.client.manager.ensure_client')
     async def test_main_registration_integration(self, mock_ensure_client):
@@ -227,7 +230,7 @@ class TestRegistrationSystem:
         
         # Register all tools
         modules = register_all_tools()
-        devices, flows, zones, system, prompts, resources = modules
+        devices, flows, zones, system, health, prompts, resources = modules
         
         # Check that each module type has the expected decorated functions
         
@@ -254,22 +257,23 @@ class TestServerStartupIntegration:
         """Test that main module imports without errors."""
         try:
             import main
-            # Verify that main has the expected functions
-            assert hasattr(main, 'main')
-            assert callable(main.main)
+            # Verify that main has the expected attributes
+            assert hasattr(main, 'mcp')
+            assert hasattr(main, 'validate_environment')
+            assert callable(main.validate_environment)
         except ImportError as e:
             pytest.fail(f"Main module should import successfully: {e}")
     
-    @patch.dict('os.environ', {}, clear=True)
-    async def test_server_startup_missing_env_vars(self):
+    def test_server_startup_missing_env_vars(self):
         """Test that server handles missing environment variables gracefully."""
-        import main
-        
-        # Should not raise an exception, but should log errors and return early
-        try:
-            await main.main()
-        except Exception as e:
-            pytest.fail(f"Server should handle missing env vars gracefully: {e}")
+        with patch.dict(os.environ, {}, clear=True):
+            # Should raise an exception when environment variables are missing
+            with pytest.raises(ValueError, match="Missing required environment variables"):
+                import importlib
+                if 'main' in sys.modules:
+                    importlib.reload(sys.modules['main'])
+                else:
+                    import main
     
     def test_registration_called_at_import(self):
         """Test that registration is called when main module is imported."""
@@ -303,10 +307,10 @@ class TestRegistrationCompatibility:
         
         # Should return modules in the expected order
         result = register_all_tools()
-        assert len(result) == 6
+        assert len(result) == 7
         
         # Should be able to unpack in the expected way
-        devices, flows, zones, system, prompts, resources = result
+        devices, flows, zones, system, health, prompts, resources = result
         
         # All should be module objects
         import types

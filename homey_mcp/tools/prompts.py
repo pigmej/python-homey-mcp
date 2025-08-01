@@ -126,7 +126,6 @@ async def get_prompt_context() -> PromptContext:
         )
 
     except Exception as e:
-        raise
         logger.warning(f"Failed to get prompt context: {e}")
         return PromptContext.empty()
 
