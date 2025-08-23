@@ -30,10 +30,34 @@ uv sync
 
 ### Docker
 
-Pull the pre-built Docker image:
+Pull the pre-built Docker image (supports both AMD64 and ARM64 architectures):
 
 ```bash
 docker pull ghcr.io/pigmej/python-homey-mcp:latest
+```
+
+The Docker image is built for multiple architectures:
+- `linux/amd64` - For Intel/AMD processors
+- `linux/arm64` - For ARM processors (Apple Silicon, Raspberry Pi, etc.)
+
+Docker will automatically pull the correct architecture for your system.
+
+#### Building Multi-Architecture Images
+
+To build your own multi-architecture Docker images:
+
+```bash
+# Setup Docker Buildx (one-time setup)
+./setup-buildx.sh
+
+# Build for current platform only
+make docker-build
+
+# Build for both AMD64 and ARM64
+make docker-build-multi
+
+# Build and push to registry
+make docker-push
 ```
 
 No additional installation steps are required when using Docker.
@@ -173,6 +197,36 @@ uv run fastmcp run main.py --transport http --host 0.0.0.0 --port 4445 --log-lev
 
 # Or the old way
 uv run fastmcp run -t http --host 0.0.0.0 -p 4445 -l DEBUG main.py
+
+# Or using Makefile
+make run
+```
+
+#### Development Commands
+
+The project includes a comprehensive Makefile with useful development commands:
+
+```bash
+# Setup and installation
+make setup              # Initial setup (install + check environment)
+make install            # Install dependencies
+make check-env          # Verify environment configuration
+
+# Development workflow
+make test               # Run test suite
+make lint               # Run linting checks
+make format             # Format code
+make clean              # Clean up generated files
+
+# Docker operations
+make docker-build       # Build Docker image for current platform
+make docker-build-multi # Build multi-architecture image (AMD64 + ARM64)
+make docker-push        # Build and push multi-architecture image
+make docker-test        # Test Docker image
+
+# Utilities
+make info               # Show project information
+make check-connection   # Test HomeyPro connection
 ```
 
 #### Installing in MCP Clients
