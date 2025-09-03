@@ -215,17 +215,6 @@ wheels = [
 ]
 
 [[package]]
-name = "dotenv"
-version = "0.9.9"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "python-dotenv" },
-]
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/b2/b7/545d2c10c1fc15e48653c91efde329a790f2eecfbbf2bd16003b5db2bab0/dotenv-0.9.9-py2.py3-none-any.whl", hash = "sha256:29cf74a087b31dafdb5a446b6d7e11cbce8ed2741540e2339c69fbef92c94ce9", size = 1892, upload-time = "2025-02-19T22:15:01.647Z" },
-]
-
-[[package]]
 name = "email-validator"
 version = "2.3.0"
 source = { registry = "https://pypi.org/simple" }
@@ -769,11 +758,11 @@ wheels = [
 [[package]]
 name = "python-homey"
 version = "0.1.0"
-source = { git = "https://github.com/pigmej/python-homey.git#e35f38da1ab58b6ccd699dabb67d5bc1f1014fc2" }
+source = { git = "https://github.com/pigmej/python-homey.git?branch=main#15c6278f39cf06c1bb9f38b531303b4773ed5a70" }
 dependencies = [
-    { name = "dotenv" },
     { name = "httpx" },
     { name = "pydantic" },
+    { name = "python-dotenv" },
     { name = "typing-extensions" },
     { name = "websockets" },
 ]
@@ -796,15 +785,15 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "fastmcp", specifier = ">=2.10.2" },
-    { name = "python-homey", git = "https://github.com/pigmej/python-homey.git" },
-    { name = "typing-extensions", specifier = ">=4.14.1" },
+    { name = "fastmcp", specifier = "==2.12.0" },
+    { name = "python-homey", git = "https://github.com/pigmej/python-homey.git?branch=main" },
+    { name = "typing-extensions", specifier = "==4.15.0" },
 ]
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "pytest", specifier = ">=8.4.1" },
-    { name = "pytest-asyncio", specifier = ">=1.0.0" },
+    { name = "pytest", specifier = "==8.4.1" },
+    { name = "pytest-asyncio", specifier = "==1.1.0" },
 ]
 
 [[package]]

@@ -20,7 +20,7 @@ py-modules = ["main"]
 homey-mcp = "main:mcp"
 
 [tool.uv.sources]
-python-homey = { git = "https://github.com/pigmej/python-homey.git" }
+python-homey = { git = "https://github.com/pigmej/python-homey.git", branch = "main" }
 
 [dependency-groups]
 dev = [
