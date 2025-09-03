@@ -5,9 +5,9 @@ description = "HomeyPro MCP Server - A Model Context Protocol server for HomeyPr
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "fastmcp>=2.10.2",
+    "fastmcp==2.12.0",
     "python-homey",
-    "typing-extensions>=4.14.1",
+    "typing-extensions==4.15.0",
 ]
 
 [tool.setuptools.packages.find]
@@ -24,8 +24,8 @@ python-homey = { git = "https://github.com/pigmej/python-homey.git" }
 
 [dependency-groups]
 dev = [
-    "pytest>=8.4.1",
-    "pytest-asyncio>=1.0.0",
+    "pytest==8.4.1",
+    "pytest-asyncio==1.1.0",
 ]
 
 [tool.pytest.ini_options]
