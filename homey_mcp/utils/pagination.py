@@ -3,8 +3,7 @@
 import json
 from typing import Any, Dict, List, Optional
 
-DEFAULT_PAGE_SIZE = 50
-MAX_PAGE_SIZE = 100
+from ..config import get_config
 
 
 class PaginationError(Exception):
@@ -15,8 +14,10 @@ class PaginationError(Exception):
 
 def parse_cursor(cursor: Optional[str]) -> Dict[str, Any]:
     """Parse cursor string into pagination parameters."""
+    config = get_config()
+    
     if not cursor or cursor == "null":
-        return {"offset": 0, "page_size": DEFAULT_PAGE_SIZE}
+        return {"offset": 0, "page_size": config.default_page_size}
 
     try:
         data = json.loads(cursor)
@@ -24,16 +25,16 @@ def parse_cursor(cursor: Optional[str]) -> Dict[str, Any]:
             raise ValueError("Cursor must be a JSON object")
 
         offset = data.get("offset", 0)
-        page_size = data.get("page_size", DEFAULT_PAGE_SIZE)
+        page_size = data.get("page_size", config.default_page_size)
 
         if not isinstance(offset, int) or offset < 0:
             raise ValueError("Offset must be a non-negative integer")
         if (
             not isinstance(page_size, int)
             or page_size <= 0
-            or page_size > MAX_PAGE_SIZE
+            or page_size > config.max_page_size
         ):
-            raise ValueError(f"Page size must be between 1 and {MAX_PAGE_SIZE}")
+            raise ValueError(f"Page size must be between 1 and {config.max_page_size}")
 
         return {"offset": offset, "page_size": page_size, **data}
     except (json.JSONDecodeError, ValueError) as e:

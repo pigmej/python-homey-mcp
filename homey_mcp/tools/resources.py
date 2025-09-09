@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import Any, Callable, Dict
 
 from ..client.manager import ensure_client
+from ..config import get_config
 from ..utils.logging import get_logger
 from ..mcp_instance import mcp
 from ..exceptions import HomeyConnectionError, HomeyTimeoutError
@@ -144,7 +145,7 @@ async def system_overview_resource() -> Dict[str, Any]:
                 },
                 "timestamp": time.time(),
                 "cache_info": {
-                    "ttl_seconds": 300,  # 5 minutes
+                    "ttl_seconds": get_config().cache_ttl,  # From config
                     "data_type": "system_overview"
                 }
             }
@@ -158,7 +159,7 @@ async def system_overview_resource() -> Dict[str, Any]:
     
     try:
         # Use 5-minute TTL for system configuration data
-        data = await _resource_cache.get_or_fetch("system_overview", fetch_system_overview, 300)
+        data = await _resource_cache.get_or_fetch("system_overview", fetch_system_overview, get_config().cache_ttl)
         
         # Handle stale data response
         if isinstance(data, dict) and "is_stale" in data:
@@ -379,7 +380,7 @@ async def zone_hierarchy_resource() -> Dict[str, Any]:
                 },
                 "timestamp": time.time(),
                 "cache_info": {
-                    "ttl_seconds": 300,  # 5 minutes for zone configuration
+                    "ttl_seconds": get_config().cache_ttl,  # From config for zone configuration
                     "data_type": "zone_hierarchy"
                 }
             }
@@ -439,7 +440,7 @@ async def zone_hierarchy_resource() -> Dict[str, Any]:
     
     try:
         # Use 5-minute TTL for zone configuration data
-        data = await _resource_cache.get_or_fetch("zone_hierarchy", fetch_zone_hierarchy, 300)
+        data = await _resource_cache.get_or_fetch("zone_hierarchy", fetch_zone_hierarchy, get_config().cache_ttl)
         
         # Handle stale data response
         if isinstance(data, dict) and "is_stale" in data:

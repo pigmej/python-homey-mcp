@@ -7,6 +7,7 @@ from functools import wraps
 from enum import Enum
 from dataclasses import dataclass
 
+from ..config import get_config
 from ..exceptions import HomeyConnectionError, HomeyTimeoutError
 from .logging import get_logger
 
@@ -28,7 +29,7 @@ class CircuitBreakerConfig:
     failure_threshold: int = 5      # Number of failures before opening
     recovery_timeout: int = 60      # Seconds before trying half-open
     success_threshold: int = 3      # Successes needed in half-open to close
-    timeout: float = 30.0           # Request timeout
+    timeout: float = None           # Request timeout (from config if None)
 
 
 class CircuitBreaker:
@@ -37,6 +38,12 @@ class CircuitBreaker:
     def __init__(self, name: str, config: Optional[CircuitBreakerConfig] = None):
         self.name = name
         self.config = config or CircuitBreakerConfig()
+        
+        # Use config timeout if not set in circuit breaker config
+        if self.config.timeout is None:
+            global_config = get_config()
+            self.config.timeout = global_config.timeout
+            
         self.state = CircuitState.CLOSED
         self.failure_count = 0
         self.success_count = 0
