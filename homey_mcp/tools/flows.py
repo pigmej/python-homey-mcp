@@ -1,6 +1,10 @@
 """Flow-related tools for HomeyPro MCP Server."""
 
+from operator import attrgetter
+
 from typing import Any, Dict, Optional
+from typing_extensions import Annotated
+from pydantic.fields import Field
 
 from ..client.manager import ensure_client
 from ..utils.logging import get_logger
@@ -65,7 +69,15 @@ async def detect_flow_type(flow_id: str) -> Optional[str]:
         raise Exception(error_msg) from e
 
 
-async def _list_flows_impl(cursor: Optional[str] = None) -> Dict[str, Any]:
+async def _list_flows_impl(
+    cursor: Optional[str] = None,
+    compact: Annotated[
+        bool,
+        Field(
+            description="Optional switch for compact results, by default true. Switch only if really needed"
+        ),
+    ] = True,
+) -> Dict[str, Any]:
     """
     Implementation of list_flows functionality.
 
@@ -79,6 +91,8 @@ async def _list_flows_impl(cursor: Optional[str] = None) -> Dict[str, Any]:
     Args:
         cursor: Optional cursor for pagination. If provided, should be a cursor
                returned from a previous call to this function.
+        compact: Optional switch for compact results, by default true. Switch only if really needed
+
 
     Returns:
         Paginated list of flows with flow_type field indicating "normal" or "advanced".
@@ -90,13 +104,19 @@ async def _list_flows_impl(cursor: Optional[str] = None) -> Dict[str, Any]:
         normal_flows_error = None
         advanced_flows_error = None
 
+        # Set up dumper based on compact flag
+        if compact:
+            dumper = attrgetter("model_dump_compact")
+        else:
+            dumper = attrgetter("model_dump")
+
         # Get normal flows
         try:
             normal_flows = await client.flows.get_flows()
             # Add flow_type field and convert to dictionaries
             normal_flow_dicts = []
             for flow in normal_flows:
-                flow_dict = flow.model_dump()
+                flow_dict = dumper(flow)()
                 flow_dict["flow_type"] = "normal"
                 normal_flow_dicts.append(flow_dict)
             combined_flows.extend(normal_flow_dicts)
@@ -111,7 +131,7 @@ async def _list_flows_impl(cursor: Optional[str] = None) -> Dict[str, Any]:
             # Add flow_type field and convert to dictionaries
             advanced_flow_dicts = []
             for flow in advanced_flows:
-                flow_dict = flow.model_dump()
+                flow_dict = dumper(flow)()
                 flow_dict["flow_type"] = "advanced"
                 advanced_flow_dicts.append(flow_dict)
             combined_flows.extend(advanced_flow_dicts)
@@ -148,7 +168,15 @@ async def _list_flows_impl(cursor: Optional[str] = None) -> Dict[str, Any]:
 
 
 @mcp.tool()
-async def list_flows(cursor: Optional[str] = None) -> Dict[str, Any]:
+async def list_flows(
+    cursor: Optional[str] = None,
+    compact: Annotated[
+        bool,
+        Field(
+            description="Optional switch for compact results, by default true. Switch only if really needed"
+        ),
+    ] = True,
+) -> Dict[str, Any]:
     """
     List all flows (both normal and advanced) with pagination support.
 
@@ -162,6 +190,8 @@ async def list_flows(cursor: Optional[str] = None) -> Dict[str, Any]:
     Args:
         cursor: Optional cursor for pagination. If provided, should be a cursor
                returned from a previous call to this function.
+        compact: Optional switch for compact results, by default true. Switch only if really needed
+
 
     Returns:
         Dict with the following structure:
@@ -190,7 +220,7 @@ async def list_flows(cursor: Optional[str] = None) -> Dict[str, Any]:
             "error": "Error message"
         }
     """
-    return await _list_flows_impl(cursor)
+    return await _list_flows_impl(cursor, compact)
 
 
 async def _trigger_flow_impl(flow_id: str) -> Dict[str, Any]:

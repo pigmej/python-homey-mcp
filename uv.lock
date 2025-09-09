@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = ">=3.13"
 
 [[package]]
@@ -758,7 +758,7 @@ wheels = [
 [[package]]
 name = "python-homey"
 version = "0.1.0"
-source = { git = "https://github.com/pigmej/python-homey.git?branch=main#15c6278f39cf06c1bb9f38b531303b4773ed5a70" }
+source = { git = "https://github.com/pigmej/python-homey.git?branch=main#c943bd7c17e0ba39dc0d1f0160bfffe0e7249e17" }
 dependencies = [
     { name = "httpx" },
     { name = "pydantic" },
