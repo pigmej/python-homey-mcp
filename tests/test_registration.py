@@ -4,7 +4,6 @@ import os
 import pytest
 import pytest_asyncio
 from unittest.mock import patch, MagicMock
-import importlib
 import sys
 
 # Configure pytest-asyncio
@@ -162,7 +161,6 @@ class TestRegistrationSystem:
     
     def test_mcp_instance_consistency(self):
         """Test that all modules use the same MCP instance."""
-        from homey_mcp.tools import devices, prompts, resources
         from homey_mcp.mcp_instance import mcp
         
         # All modules should import and use the same mcp instance
@@ -183,7 +181,6 @@ class TestRegistrationSystem:
         mock_ensure_client.return_value = MagicMock()
         
         # Import main module (this should trigger registration)
-        import main
         
         # Verify that register_all_tools was called during import
         # We can't directly test this, but we can verify the modules are available
@@ -272,7 +269,7 @@ class TestServerStartupIntegration:
                 if 'main' in sys.modules:
                     importlib.reload(sys.modules['main'])
                 else:
-                    import main
+                    pass
     
     def test_registration_called_at_import(self):
         """Test that registration is called when main module is imported."""
@@ -283,7 +280,6 @@ class TestServerStartupIntegration:
                 del sys.modules[module]
         
         # Import main should trigger registration
-        import main
         
         # Verify that all modules are available after import
         from homey_mcp.tools import devices, flows, zones, system, prompts, resources

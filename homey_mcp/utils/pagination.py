@@ -3,12 +3,13 @@
 import json
 from typing import Any, Dict, List, Optional
 
-DEFAULT_PAGE_SIZE = 25
+DEFAULT_PAGE_SIZE = 50
 MAX_PAGE_SIZE = 100
 
 
 class PaginationError(Exception):
     """Raised when pagination parameters are invalid."""
+
     pass
 
 

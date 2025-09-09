@@ -2,7 +2,7 @@
 
 import time
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Dict
 
 from ..client.manager import ensure_client
 from ..utils.logging import get_logger

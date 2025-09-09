@@ -4,13 +4,11 @@ import pytest
 import pytest_asyncio
 import time
 from unittest.mock import AsyncMock, MagicMock, patch
-from typing import Dict, Any
 
 import homey_mcp.tools.resources as resources_module
 from homey_mcp.tools.resources import (
     CacheEntry,
     SimpleCache,
-    _resource_cache,
 )
 
 # Configure pytest-asyncio

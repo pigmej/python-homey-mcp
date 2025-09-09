@@ -2,7 +2,7 @@
 
 import asyncio
 import time
-from typing import Any, Callable, Dict, Optional, TypeVar, Union
+from typing import Any, Callable, Dict, Optional, TypeVar
 from functools import wraps
 from enum import Enum
 from dataclasses import dataclass

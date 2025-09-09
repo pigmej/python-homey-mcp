@@ -1,13 +1,12 @@
 """Health check and monitoring tools for HomeyPro MCP Server."""
 
 import time
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Any, Dict, Optional
 from dataclasses import dataclass
 
 from ..client.manager import ensure_client
 from ..config import get_config
-from ..exceptions import HomeyConnectionError, HomeyTimeoutError
 from ..utils.logging import get_logger
 from ..mcp_instance import mcp
 

@@ -2,9 +2,7 @@
 
 import pytest
 import pytest_asyncio
-import json
 from unittest.mock import AsyncMock, MagicMock, patch
-from typing import Dict, Any, List
 
 # Configure pytest-asyncio
 pytest_asyncio.auto_mode = True

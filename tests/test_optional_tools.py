@@ -1,7 +1,6 @@
 """Tests for optional tools functionality."""
 
 import os
-import pytest
 from unittest.mock import patch, MagicMock
 
 from homey_mcp.utils.tool_config import configure_optional_tools, _disable_tool, TOOL_FUNCTIONS

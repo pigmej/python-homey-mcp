@@ -1,9 +1,8 @@
 """Prompt-related tools for HomeyPro MCP Server."""
 
-import time
 from datetime import datetime
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, Optional, Set
 
 from ..client.manager import ensure_client
 from ..utils.logging import get_logger

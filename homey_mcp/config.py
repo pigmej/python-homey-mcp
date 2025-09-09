@@ -9,21 +9,21 @@ from urllib.parse import urlparse
 @dataclass
 class HomeyConfig:
     """Configuration settings for HomeyPro MCP Server."""
-    
+
     api_url: str
     api_token: str
     timeout: float = 30.0
     verify_ssl: bool = False
     cache_ttl: int = 300  # 5 minutes default
     max_page_size: int = 100
-    default_page_size: int = 25
+    default_page_size: int = 50
     log_level: str = "INFO"
-    
+
     def __post_init__(self):
         """Validate configuration after initialization."""
         self._validate_url()
         self._validate_token()
-    
+
     def _validate_url(self):
         """Validate API URL format."""
         parsed = urlparse(self.api_url)
@@ -32,25 +32,25 @@ class HomeyConfig:
                 f"Invalid API URL format: {self.api_url}. "
                 "Expected format: http://192.168.1.100"
             )
-    
+
     def _validate_token(self):
         """Validate API token is present."""
         if not self.api_token or len(self.api_token.strip()) < 10:
             raise ValueError(
                 "API token must be provided and at least 10 characters long"
             )
-    
+
     @classmethod
     def from_env(cls) -> "HomeyConfig":
         """Create configuration from environment variables."""
         api_url = os.getenv("HOMEY_API_URL")
         api_token = os.getenv("HOMEY_API_TOKEN")
-        
+
         if not api_url:
             raise ValueError("HOMEY_API_URL environment variable is required")
         if not api_token:
             raise ValueError("HOMEY_API_TOKEN environment variable is required")
-        
+
         return cls(
             api_url=api_url,
             api_token=api_token,
